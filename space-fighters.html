@@ -2357,7 +2357,7 @@ function render(){
     }
     // player
     if(!(player.inv>0&&Math.sin(gT*15)<0)){
-      drawShip(ctx,player.x,player.y,player.ang,selShip,1,1);
+     drawShip(ctx, player.x, player.y, player.ang, 0, 1, 1);
       if(player.spAct>0&&player.spType==='shield'){
         ctx.save();ctx.strokeStyle=SCOLS[selShip];ctx.lineWidth=2;ctx.globalAlpha=.45+.3*Math.sin(gT*5);
         ctx.beginPath();ctx.arc(player.x,player.y,31+Math.sin(gT*4)*3,0,Math.PI*2);ctx.stroke();ctx.restore();
