@@ -1,199 +1,186 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-    <title>NEXUS GAME - WINGS FIGHT STYLE</title>
+    <meta charset="UTF-8">
+    <title>NEXUS GAME: WARFRONT</title>
     <style>
-        body { margin: 0; background: #00050a; overflow: hidden; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #hud { position: absolute; top: 25px; left: 25px; pointer-events: none; }
-        .label { color: #00d4ff; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; }
-        .value { font-size: 24px; font-weight: bold; margin-bottom: 10px; text-shadow: 0 0 10px #00d4ff; }
-        canvas { display: block; filter: blur(0.4px); }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Orbitron', sans-serif; cursor: crosshair; }
+        canvas { display: block; }
+        #ui {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; border: 20px solid rgba(0, 212, 255, 0.05); box-sizing: border-box;
+        }
+        .stats { position: absolute; top: 30px; left: 40px; color: #00d4ff; text-transform: uppercase; letter-spacing: 3px; }
+        .weapon-system { position: absolute; bottom: 40px; right: 40px; text-align: right; color: #fff; }
+        .lvl-bar { width: 200px; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; }
+        #lvl-progress { width: 10%; height: 100%; background: #00d4ff; box-shadow: 0 0 15px #00d4ff; transition: 0.3s; }
+        .glitch { animation: glitch 1s linear infinite; }
+        @keyframes glitch { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
     </style>
+    <link href="https://googleapis.com" rel="stylesheet">
 </head>
 <body>
 
-    <div id="hud">
-        <div class="label">Status do Sistema</div>
-        <div class="value">NÍVEL <span id="lvl">1</span>/20</div>
-        <div class="label">Armamento Ativo</div>
-        <div id="arma" class="value" style="color: #ff0055;">LASER</div>
-        <div class="label">Energia de Combate</div>
-        <div id="score" class="value">0</div>
+<div id="ui">
+    <div class="stats">
+        <div style="font-size: 10px; opacity: 0.7;">Combat Monitor v1.0</div>
+        <div style="font-size: 28px; font-weight: 900;" id="score-val">000000</div>
+        <div style="font-size: 14px;">NÍVEL <span id="lvl-val">1</span> / 20</div>
+        <div class="lvl-bar"><div id="lvl-progress"></div></div>
     </div>
+    <div class="weapon-system">
+        <div style="font-size: 10px; opacity: 0.5;">SISTEMA DE ARMAS</div>
+        <div id="weapon-name" style="font-size: 32px; font-weight: 900; color: #ff0055;">LASER CANNON</div>
+        <div style="font-size: 10px; color: #aaa;">[1] LASER | [2] HYDRO | [3] NUCLEAR</div>
+    </div>
+</div>
 
-    <canvas id="gameCanvas"></canvas>
+<canvas id="game"></canvas>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-        let score = 0; let nivel = 1; let armaAtual = 'LASER';
-        let mouse = { x: canvas.width/2, y: canvas.height/2 };
-        const tiros = []; const inimigos = []; const particulas = [];
+let score = 0; let lvl = 1; let weapon = 'LASER';
+let screenShake = 0;
+const mouse = { x: canvas.width/2, y: canvas.height/2 };
+const projectiles = []; const enemies = []; const particles = [];
+const stars = Array.from({length: 120}, () => ({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, z: Math.random()*5+1 }));
 
-        // Estrelas com profundidade
-        const estrelas = Array.from({length: 150}, () => ({
-            x: Math.random() * canvas.width, 
-            y: Math.random() * canvas.height, 
-            z: Math.random() * 3 + 1
-        }));
+// --- DESIGN DE ELITE: NAVE DO JOGADOR ---
+function drawPlayer(x, y) {
+    ctx.save();
+    ctx.translate(x + (Math.random()*screenShake), y + (Math.random()*screenShake));
+    
+    // Engine Glow
+    const pulse = 15 + Math.random()*10;
+    const grad = ctx.createRadialGradient(0, 20, 0, 0, 20, pulse);
+    grad.addColorStop(0, '#fff'); grad.addColorStop(0.5, '#00d4ff'); grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(0, 20, pulse, 0, Math.PI*2); ctx.fill();
 
-        // --- DESENHO DA NAVE REALISTA ---
-        function desenharNave(x, y) {
-            ctx.save();
-            ctx.translate(x, y);
-            
-            // Fogo do Motor (Oscilante)
-            const engineSize = 15 + Math.random() * 10;
-            const grdEngine = ctx.createRadialGradient(0, 25, 0, 0, 25, engineSize);
-            grdEngine.addColorStop(0, '#fff');
-            grdEngine.addColorStop(0.4, '#00d4ff');
-            grdEngine.addColorStop(1, 'transparent');
-            ctx.fillStyle = grdEngine;
-            ctx.beginPath();
-            ctx.arc(0, 25, engineSize, 0, Math.PI*2);
-            ctx.fill();
+    // Wings
+    ctx.fillStyle = '#0a192f'; ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -30); // Nose
+    ctx.lineTo(-25, 20); ctx.lineTo(-10, 15); ctx.lineTo(10, 15); ctx.lineTo(25, 20);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
 
-            // Corpo Metálico
-            const grdBody = ctx.createLinearGradient(-15, 0, 15, 0);
-            grdBody.addColorStop(0, '#16213e');
-            grdBody.addColorStop(0.5, '#00d4ff');
-            grdBody.addColorStop(1, '#16213e');
-            
-            ctx.fillStyle = grdBody;
-            ctx.beginPath();
-            ctx.moveTo(0, -25); // Nariz
-            ctx.lineTo(-8, -5); ctx.lineTo(-18, 15); // Asa Esq
-            ctx.lineTo(0, 10); // Centro traseiro
-            ctx.lineTo(18, 15); ctx.lineTo(8, -5); // Asa Dir
-            ctx.closePath();
-            ctx.fill();
-            
-            // Detalhes de Cockpit
-            ctx.fillStyle = '#fff';
-            ctx.globalAlpha = 0.6;
-            ctx.beginPath();
-            ctx.ellipse(0, -5, 4, 8, 0, 0, Math.PI*2);
-            ctx.fill();
-            
-            ctx.restore();
-        }
+    // Cockpit
+    ctx.fillStyle = '#00d4ff'; ctx.globalAlpha = 0.5;
+    ctx.beginPath(); ctx.ellipse(0, -5, 5, 12, 0, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+}
 
-        function desenharInimigo(x, y, s) {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(Math.PI); // Aponta para baixo
+// --- INIMIGOS AERODINÂMICOS ---
+function drawEnemy(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.rotate(Math.PI);
+    ctx.fillStyle = '#1a0005'; ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -e.s); ctx.lineTo(-e.s, e.s); ctx.lineTo(0, e.s/2); ctx.lineTo(e.s, e.s);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    
+    // Core Glow
+    ctx.shadowBlur = 15; ctx.shadowColor = '#ff0055';
+    ctx.fillStyle = '#ff0055'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+}
 
-            // Brilho do motor inimigo
-            ctx.fillStyle = '#ff005544';
-            ctx.beginPath(); ctx.arc(0, 15, s/2, 0, Math.PI*2); ctx.fill();
+function spawnParticle(x, y, color, amount = 10) {
+    for(let i=0; i<amount; i++) {
+        particles.push({
+            x, y, 
+            vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, 
+            life: 1.0, color, size: Math.random()*3+1
+        });
+    }
+}
 
-            // Fuselagem Inimiga
-            ctx.fillStyle = '#330011';
-            ctx.strokeStyle = '#ff0055';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, -s);
-            ctx.lineTo(-s, s); ctx.lineTo(0, s/2); ctx.lineTo(s, s);
-            ctx.closePath();
-            ctx.fill(); ctx.stroke();
-            
-            ctx.restore();
-        }
+window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+window.addEventListener('mousedown', fire);
+window.addEventListener('keydown', e => {
+    if(e.key === '1') { weapon = 'LASER'; updateUI('#ff0055', 'LASER CANNON'); }
+    if(e.key === '2') { weapon = 'HYDRO'; updateUI('#00d4ff', 'HYDRO SPREAD'); }
+    if(e.key === '3') { weapon = 'NUCLEAR'; updateUI('#00ff00', 'NUCLEAR CORE'); }
+});
 
-        // --- LÓGICA DE TIROS ---
-        class Projectile {
-            constructor(x, y, tipo, angle = 0) {
-                this.x = x; this.y = y; this.tipo = tipo; this.angle = angle;
-                this.v = tipo === 'NUCLEAR' ? 5 : 18;
-            }
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.shadowBlur = 15;
-                if(this.tipo === 'LASER') {
-                    ctx.shadowColor = '#ff0000';
-                    ctx.fillStyle = '#fff';
-                    ctx.fillRect(-1, -15, 2, 25);
-                } else if(this.tipo === 'HYDRO') {
-                    ctx.shadowColor = '#00ffff';
-                    ctx.fillStyle = '#00ffff';
-                    ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
-                } else {
-                    ctx.shadowColor = '#00ff00';
-                    ctx.fillStyle = '#0f0';
-                    ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill();
+function updateUI(color, name) {
+    const el = document.getElementById('weapon-name');
+    el.innerText = name; el.style.color = color;
+}
+
+function fire() {
+    if(weapon === 'LASER') projectiles.push({ x: mouse.x, y: mouse.y, v: 25, type: 'LASER', angle: 0 });
+    if(weapon === 'HYDRO') [-0.15, 0, 0.15].forEach(a => projectiles.push({ x: mouse.x, y: mouse.y, v: 18, type: 'HYDRO', angle: a }));
+    if(weapon === 'NUCLEAR') {
+        projectiles.push({ x: mouse.x, y: mouse.y, v: 8, type: 'NUCLEAR', angle: 0, size: 10 });
+        screenShake = 5;
+    }
+}
+
+function update() {
+    ctx.fillStyle = '#00050a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if(screenShake > 0) screenShake *= 0.9;
+
+    // Background Stars (Motion Blur)
+    stars.forEach(s => {
+        s.y += s.z * (1 + lvl*0.2);
+        if(s.y > canvas.height) s.y = 0;
+        ctx.strokeStyle = `rgba(0, 212, 255, ${s.z/10})`;
+        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x, s.y - s.z*2); ctx.stroke();
+    });
+
+    drawPlayer(mouse.x, mouse.y);
+
+    // Projectiles
+    projectiles.forEach((p, i) => {
+        p.y -= p.v; p.x += p.angle * p.v;
+        ctx.shadowBlur = 20; ctx.shadowColor = p.type === 'NUCLEAR' ? '#0f0' : (p.type === 'HYDRO' ? '#00d4ff' : '#f05');
+        ctx.fillStyle = '#fff';
+        if(p.type === 'NUCLEAR') { p.size += 0.5; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); }
+        else ctx.fillRect(p.x-1, p.y-10, 3, 20);
+        if(p.y < -100) projectiles.splice(i, 1);
+    });
+
+    // Enemies
+    if(Math.random() < 0.03 + (lvl*0.01)) enemies.push({ x: Math.random()*canvas.width, y: -50, s: 25, hp: 1 + lvl });
+    enemies.forEach((e, i) => {
+        e.y += 2 + lvl*0.5;
+        drawEnemy(e);
+        
+        projectiles.forEach((p, pi) => {
+            if(Math.hypot(p.x - e.x, p.y - e.y) < e.s + (p.size || 5)) {
+                spawnParticle(e.x, e.y, p.type === 'NUCLEAR' ? '#0f0' : '#f05', 15);
+                if(p.type !== 'NUCLEAR') projectiles.splice(pi, 1);
+                enemies.splice(i, 1);
+                score += 150;
+                document.getElementById('score-val').innerText = score.toString().padStart(6, '0');
+                if(score % 3000 === 0 && lvl < 20) {
+                    lvl++; 
+                    document.getElementById('lvl-val').innerText = lvl;
+                    document.getElementById('lvl-progress').style.width = (lvl/20)*100 + '%';
                 }
-                ctx.restore();
             }
-        }
-
-        // --- LOOP PRINCIPAL ---
-        function update() {
-            ctx.fillStyle = '#000814';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Estrelas Parallax
-            estrelas.forEach(s => {
-                s.y += s.z;
-                if(s.y > canvas.height) s.y = 0;
-                ctx.fillStyle = `rgba(255,255,255,${s.z/4})`;
-                ctx.fillRect(s.x, s.y, s.z/2, s.z/2);
-            });
-
-            desenharNave(mouse.x, mouse.y);
-
-            // Gerar Inimigos (IA Progressiva)
-            if(Math.random() < 0.02 + (nivel * 0.01)) {
-                inimigos.push({x: Math.random()*canvas.width, y: -50, s: 20+Math.random()*10});
-            }
-
-            // Tiros
-            tiros.forEach((t, i) => {
-                t.y -= t.v; t.x += t.angle;
-                t.draw();
-                if(t.y < -50) tiros.splice(i, 1);
-            });
-
-            // Inimigos
-            inimigos.forEach((ini, ii) => {
-                ini.y += 3 + (nivel * 0.5);
-                desenharInimigo(ini.x, ini.y, ini.s);
-
-                // Colisão
-                tiros.forEach((t, ti) => {
-                    if(Math.hypot(t.x - ini.x, t.y - ini.y) < ini.s + 10) {
-                        inimigos.splice(ii, 1);
-                        if(t.tipo !== 'NUCLEAR') tiros.splice(ti, 1);
-                        score += 100;
-                        document.getElementById('score').innerText = score;
-                        if(score % 2000 === 0 && nivel < 20) { nivel++; document.getElementById('lvl').innerText = nivel; }
-                    }
-                });
-                if(ini.y > canvas.height + 50) inimigos.splice(ii, 1);
-            });
-
-            requestAnimationFrame(update);
-        }
-
-        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-        window.addEventListener('mousedown', () => {
-            if(armaAtual === 'LASER') tiros.push(new Projectile(mouse.x, mouse.y, 'LASER'));
-            if(armaAtual === 'HYDRO') {
-                [-3, 0, 3].forEach(a => tiros.push(new Projectile(mouse.x, mouse.y, 'HYDRO', a)));
-            }
-            if(armaAtual === 'NUCLEAR') tiros.push(new Projectile(mouse.x, mouse.y, 'NUCLEAR'));
         });
-        window.addEventListener('keydown', e => {
-            if(e.key === '1') { armaAtual = 'LASER'; document.getElementById('arma').style.color = '#ff0055'; }
-            if(e.key === '2') { armaAtual = 'HYDRO'; document.getElementById('arma').style.color = '#00d4ff'; }
-            if(e.key === '3') { armaAtual = 'NUCLEAR'; document.getElementById('arma').style.color = '#00ff00'; }
-            document.getElementById('arma').innerText = armaAtual;
-        });
+        if(e.y > canvas.height + 100) enemies.splice(i, 1);
+    });
 
-        update();
-    </script>
+    // Explosions
+    particles.forEach((p, i) => {
+        p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+        ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+        if(p.life <= 0) particles.splice(i, 1);
+    });
+    ctx.globalAlpha = 1.0;
+
+    requestAnimationFrame(update);
+}
+update();
+</script>
 </body>
 </html>
