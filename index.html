@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NEXUS GAME - ULTRA EDITION</title>
+    <title>NEXUS GAME - WINGS FIGHT STYLE</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; color: #00ff00; font-family: 'Courier New', monospace; }
-        #hud { position: absolute; top: 20px; left: 20px; text-shadow: 2px 2px #000; pointer-events: none; }
-        canvas { display: block; }
+        body { margin: 0; background: #000; overflow: hidden; color: #fff; font-family: 'Arial Black', sans-serif; }
+        #hud { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 10; }
+        .bar { width: 200px; height: 10px; background: #333; border: 2px solid #555; }
+        #energy { width: 100%; height: 100%; background: #00d4ff; transition: 0.3s; }
+        canvas { display: block; filter: saturate(1.5) contrast(1.2); }
     </style>
 </head>
 <body>
 
     <div id="hud">
-        <h1 style="margin:0; color: #00d4ff;">NEXUS GAME: NÍVEL <span id="lvl">1</span></h1>
-        <div>ARMA: <span id="arma" style="color: #fff;">LASER</span> | SCORE: <span id="score">0</span></div>
-        <div style="color: #555; font-size: 12px; margin-top: 5px;">[1] Laser | [2] Hydro (Triplo) | [3] Nuclear (Explosivo)</div>
+        <h2 style="margin:0; color: #ffcc00; font-style: italic;">NEXUS: WINGS FIGHT</h2>
+        <div style="font-size: 12px; letter-spacing: 2px;">NÍVEL <span id="lvl">1</span>/20</div>
+        <div class="bar"><div id="energy"></div></div>
+        <div style="margin-top: 10px;">SCORE: <span id="score">0</span></div>
+        <div id="weaponName" style="color: #00d4ff;">ARMA: LASER</div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -24,118 +28,129 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        // Assets - Usando naves reais (Sprites de domínio público)
+        const shipImg = new Image();
+        shipImg.src = 'https://imgur.com'; // Nave Player
+        const enemyImg = new Image();
+        enemyImg.src = 'https://imgur.com'; // Nave Inimiga
+
         let score = 0;
         let nivel = 1;
         let armaAtual = 'LASER';
         let mouse = { x: canvas.width/2, y: canvas.height/2 };
-        
         const tiros = [];
         const inimigos = [];
         const particulas = [];
-        const estrelas = Array.from({length: 100}, () => ({
-            x: Math.random() * canvas.width, 
-            y: Math.random() * canvas.height, 
-            s: Math.random() * 2
+
+        // Fundo estrelado dinâmico
+        const stars = Array.from({length: 150}, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            v: Math.random() * 5 + 2
         }));
 
         class Tiro {
             constructor(x, y, tipo, angle = 0) {
-                this.x = x; this.y = y; this.tipo = tipo;
-                this.angle = angle;
-                this.size = tipo === 'NUCLEAR' ? 10 : 4;
-                this.color = tipo === 'LASER' ? '#ff0000' : (tipo === 'HYDRO' ? '#00ffff' : '#00ff00');
-                this.speed = tipo === 'NUCLEAR' ? 4 : 15;
+                this.x = x; this.y = y; this.tipo = tipo; this.angle = angle;
+                this.v = (tipo === 'NUCLEAR') ? 6 : 18;
+                this.size = (tipo === 'NUCLEAR') ? 20 : 5;
             }
             update() {
-                this.y -= this.speed;
+                this.y -= this.v;
                 this.x += this.angle;
-                if(this.tipo === 'NUCLEAR') this.size += 0.2;
+                if(this.tipo === 'NUCLEAR') this.size += 0.3;
             }
             draw() {
-                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15;
+                if(this.tipo === 'LASER') { ctx.fillStyle = '#f00'; ctx.shadowColor = '#f00'; }
+                else if(this.tipo === 'HYDRO') { ctx.fillStyle = '#0ff'; ctx.shadowColor = '#0ff'; }
+                else { ctx.fillStyle = '#0f0'; ctx.shadowColor = '#0f0'; }
+                
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
                 ctx.fill();
+                ctx.shadowBlur = 0;
             }
         }
 
-        function criarExplosao(x, y, cor) {
-            for(let i=0; i<20; i++) {
-                particulas.push({
-                    x, y, 
-                    vx: (Math.random()-0.5)*10, 
-                    vy: (Math.random()-0.5)*10, 
-                    life: 1.0, 
-                    cor
-                });
+        class Enemy {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = -60;
+                this.w = 50; this.h = 50;
+                this.speed = Math.random() * 2 + (nivel * 0.5);
+                this.curve = Math.random() * 0.05;
+                this.offset = Math.random() * 100;
+            }
+            update() {
+                this.y += this.speed;
+                this.x += Math.sin(this.y * 0.02 + this.offset) * 3; // Movimento em S
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(Math.PI); // Gira para baixo
+                ctx.drawImage(enemyImg, -this.w/2, -this.h/2, this.w, this.h);
+                ctx.restore();
             }
         }
 
         window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-        
         window.addEventListener('mousedown', () => {
-            if(armaAtual === 'LASER') {
-                tiros.push(new Tiro(mouse.x, mouse.y, 'LASER'));
-            } else if(armaAtual === 'HYDRO') {
-                tiros.push(new Tiro(mouse.x, mouse.y, 'HYDRO', -2));
-                tiros.push(new Tiro(mouse.x, mouse.y, 'HYDRO', 0));
-                tiros.push(new Tiro(mouse.x, mouse.y, 'HYDRO', 2));
-            } else {
-                tiros.push(new Tiro(mouse.x, mouse.y, 'NUCLEAR'));
+            if(armaAtual === 'LASER') tiros.push(new Tiro(mouse.x, mouse.y-20, 'LASER'));
+            if(armaAtual === 'HYDRO') {
+                for(let i=-2; i<=2; i+=2) tiros.push(new Tiro(mouse.x, mouse.y-20, 'HYDRO', i));
             }
+            if(armaAtual === 'NUCLEAR') tiros.push(new Tiro(mouse.x, mouse.y-20, 'NUCLEAR'));
         });
 
         window.addEventListener('keydown', e => {
             if(e.key === '1') armaAtual = 'LASER';
             if(e.key === '2') armaAtual = 'HYDRO';
             if(e.key === '3') armaAtual = 'NUCLEAR';
-            document.getElementById('arma').innerText = armaAtual;
+            document.getElementById('weaponName').innerText = "ARMA: " + armaAtual;
         });
 
         function loop() {
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = '#000814';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Estrelas de fundo
-            ctx.fillStyle = "#fff";
-            estrelas.forEach(s => {
-                s.y += s.s + (nivel * 0.5);
-                if(s.y > canvas.height) s.y = 0;
-                ctx.fillRect(s.x, s.y, s.s, s.s);
+            // Estrelas
+            ctx.fillStyle = '#fff';
+            stars.forEach(s => {
+                s.y += s.v;
+                if(s.y > canvas.height) { s.y = -10; s.x = Math.random()*canvas.width; }
+                ctx.globalAlpha = 0.5;
+                ctx.fillRect(s.x, s.y, 2, 2);
             });
+            ctx.globalAlpha = 1;
 
-            // Desenhar Nave
-            ctx.strokeStyle = '#00d4ff';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(mouse.x, mouse.y - 20);
-            ctx.lineTo(mouse.x - 20, mouse.y + 20);
-            ctx.lineTo(mouse.x + 20, mouse.y + 20);
-            ctx.closePath();
-            ctx.stroke();
+            // Player Ship
+            ctx.save();
+            ctx.translate(mouse.x, mouse.y);
+            // Inclinação lateral baseada no movimento do mouse
+            let tilt = (mouse.x - canvas.width/2) * 0.001;
+            ctx.rotate(tilt);
+            ctx.drawImage(shipImg, -30, -30, 60, 60);
+            ctx.restore();
 
-            // Gerar inimigos
-            if(Math.random() < 0.03 + (nivel * 0.01)) {
-                inimigos.push({x: Math.random()*canvas.width, y: -50, s: 20+Math.random()*20});
-            }
+            // Spawn Inimigos
+            if(Math.random() < 0.02 + (nivel * 0.01)) inimigos.push(new Enemy());
 
-            // Tiros
-            tiros.forEach((t, i) => {
-                t.update(); t.draw();
-                if(t.y < -50) tiros.splice(i, 1);
-            });
+            // Update & Draw Inimigos
+            inimigos.forEach((en, i) => {
+                en.update(); en.draw();
+                if(en.y > canvas.height + 50) inimigos.splice(i, 1);
 
-            // Inimigos e Colisões
-            inimigos.forEach((ini, ii) => {
-                ini.y += 2 + nivel;
-                ctx.strokeStyle = '#ff0055';
-                ctx.strokeRect(ini.x - ini.s/2, ini.y - ini.s/2, ini.s, ini.s);
-
+                // Colisão
                 tiros.forEach((t, ti) => {
-                    let dist = Math.hypot(t.x - ini.x, t.y - ini.y);
-                    if(dist < ini.s) {
-                        criarExplosao(ini.x, ini.y, t.tipo === 'NUCLEAR' ? '#0f0' : '#f05');
-                        inimigos.splice(ii, 1);
+                    if(Math.hypot(t.x - en.x, t.y - en.y) < en.w/2 + t.size) {
+                        for(let j=0; j<15; j++) particulas.push({
+                            x: en.x, y: en.y, 
+                            vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
+                            life: 1, color: t.tipo === 'NUCLEAR' ? '#0f0' : '#ff0'
+                        });
+                        inimigos.splice(i, 1);
                         if(t.tipo !== 'NUCLEAR') tiros.splice(ti, 1);
                         score += 100;
                         document.getElementById('score').innerText = score;
@@ -145,22 +160,28 @@
                         }
                     }
                 });
-                if(ini.y > canvas.height) inimigos.splice(ii, 1);
             });
 
-            // Partículas de explosão
+            // Update & Draw Tiros
+            tiros.forEach((t, i) => {
+                t.update(); t.draw();
+                if(t.y < -50 || t.x < 0 || t.x > canvas.width) tiros.splice(i, 1);
+            });
+
+            // Partículas
             particulas.forEach((p, i) => {
-                p.x += p.vx; p.y += p.vy; p.life -= 0.02;
-                ctx.fillStyle = p.cor;
+                p.x += p.vx; p.y += p.vy; p.life -= 0.03;
+                ctx.fillStyle = p.color;
                 ctx.globalAlpha = p.life;
                 ctx.fillRect(p.x, p.y, 3, 3);
-                ctx.globalAlpha = 1;
                 if(p.life <= 0) particulas.splice(i, 1);
             });
+            ctx.globalAlpha = 1;
 
             requestAnimationFrame(loop);
         }
-        loop();
+        
+        shipImg.onload = loop; // Só começa quando a imagem carregar
     </script>
 </body>
 </html>
