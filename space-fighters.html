@@ -594,7 +594,7 @@ function drawBg(dt) {
 // ─── SHIP DRAWING ─────────────────────────────────────────────
 var SCOLS = ['#00d4ff'];
 
-function drawShip(c, x, y, ang, sc, eg) {
+function drawShip(c, x, y, ang, idx, sc, eg) {
   if (sc === undefined) sc = 1;
   if (eg === undefined) eg = 1;
 
@@ -605,37 +605,86 @@ function drawShip(c, x, y, ang, sc, eg) {
   c.rotate(ang);
   c.scale(sc, sc);
 
-  // pseudo-3D tilt
   c.transform(1, 0, -0.08, 1, 0, 0);
 
-  // Engine glow
+  // glow motor
   if (eg > 0) {
     c.save();
-    c.globalAlpha = eg * .8;
+    c.globalAlpha = eg * 0.8;
 
-    var eg2 = c.createRadialGradient(0, 22, 0, 0, 22, 26);
-    eg2.addColorStop(0, 'rgba(255,220,100,1)');
-    eg2.addColorStop(.3, col);
-    eg2.addColorStop(1, 'transparent');
+    var g = c.createRadialGradient(0, 22, 0, 0, 22, 26);
+    g.addColorStop(0, 'rgba(255,220,100,1)');
+    g.addColorStop(0.3, col);
+    g.addColorStop(1, 'transparent');
 
-    c.fillStyle = eg2;
+    c.fillStyle = g;
     c.beginPath();
     c.arc(0, 22, 26, 0, Math.PI * 2);
     c.fill();
 
-    c.globalAlpha = eg * .9;
-
-    var eg3 = c.createRadialGradient(0, 22, 0, 0, 22, 10);
-    eg3.addColorStop(0, 'rgba(255,255,255,.95)');
-    eg3.addColorStop(1, 'transparent');
-
-    c.fillStyle = eg3;
-    c.beginPath();
-    c.arc(0, 22, 10, 0, Math.PI * 2);
-    c.fill();
-
     c.restore();
   }
+
+  c.shadowColor = col;
+  c.shadowBlur = 25;
+
+  // =========================
+  // 🚀 NAVE WINGS ÚNICA
+  // =========================
+
+  c.beginPath();
+  c.moveTo(0, -40);
+  c.lineTo(-25, 5);
+  c.lineTo(-12, 20);
+  c.lineTo(0, 10);
+  c.lineTo(12, 20);
+  c.lineTo(25, 5);
+  c.closePath();
+
+  var body = c.createLinearGradient(0, -40, 0, 20);
+  body.addColorStop(0, '#8fefff');
+  body.addColorStop(0.5, '#00aaff');
+  body.addColorStop(1, '#002244');
+
+  c.fillStyle = body;
+  c.fill();
+
+  c.strokeStyle = '#00eaff';
+  c.lineWidth = 2;
+  c.stroke();
+
+  // asas
+  c.beginPath();
+  c.moveTo(-25, 5);
+  c.lineTo(-40, 20);
+  c.lineTo(-30, 25);
+  c.lineTo(-12, 20);
+  c.closePath();
+  c.fillStyle = '#003344';
+  c.fill();
+
+  c.beginPath();
+  c.moveTo(25, 5);
+  c.lineTo(40, 20);
+  c.lineTo(30, 25);
+  c.lineTo(12, 20);
+  c.closePath();
+  c.fillStyle = '#003344';
+  c.fill();
+
+  // cockpit
+  var cockpit = c.createRadialGradient(0, -18, 2, 0, -18, 12);
+  cockpit.addColorStop(0, '#fff');
+  cockpit.addColorStop(0.4, '#00eaff');
+  cockpit.addColorStop(1, '#001122');
+
+  c.beginPath();
+  c.ellipse(0, -18, 6, 10, 0, 0, Math.PI * 2);
+  c.fillStyle = cockpit;
+  c.fill();
+
+  c.restore();
+}
 
   c.shadowColor = col;
   c.shadowBlur = 25;
@@ -727,7 +776,7 @@ function drawShip(c, x, y, ang, sc, eg) {
   c.fill();
 
   c.restore();
-}
+
 
   c.shadowColor = col;
   c.shadowBlur = 20;
