@@ -588,37 +588,39 @@ function drawPlayerShip(ctx, x, y, angle, state) {
     ctx.restore();
 }
 function shoot() {
-    const now = Date.now();
-    if (now - state.lastShotTime < state.shootDelay) return; // Controle de cadência
-
-    const player = state.player;
+    const p = state.player;
     
-    // Criamos o projétil partindo da ponta da nave
-    const bullet = {
-        x: player.x + Math.cos(player.angle - Math.PI/2) * 25,
-        y: player.y + Math.sin(player.angle - Math.PI/2) * 25,
-        angle: player.angle,
-        speed: 10,
-        color: '#00fbff'
-    };
+    // 1. Verificamos se há munição e se o cooldown permitiu o disparo
+    // O controle de tempo (dt) agora é feito dentro da function update
+    
+    // 2. Criamos o projétil usando a função fireBullet que você já tem no script
+    // Ela já cuida de adicionar ao array state.bullets e tocar o som sfxShoot()
+    fireBullet(p.x, p.y, p.angle);
 
-    state.projectiles.push(bullet);
-    state.lastShotTime = now;
+    // 3. Efeito de tiro duplo para ondas avançadas (Onda 3+)
+    if (state.wave >= 3) {
+        // Dispara um segundo tiro levemente deslocado para a direita da nave
+        const offX = Math.cos(p.angle) * 10;
+        fireBullet(p.x + Math.cos(p.angle) * 10, p.y + Math.sin(p.angle) * 10, p.angle);
+    }
 }
-const keys = {};
 
-window.addEventListener('keydown', (e) => {
-    keys[e.code] = true;
-});
+// ═══════════════════════════════════════════════════════
+// INTEGRAÇÃO NO UPDATE (COLOQUE ISSO DENTRO DA FUNCTION UPDATE)
+// ═══════════════════════════════════════════════════════
 
-window.addEventListener('keyup', (e) => {
-    keys[e.code] = false;
-});
+// Dentro da sua function update(dt), localize a parte de disparo e deixe assim:
+p.fireCooldown -= dt;
 
-// No seu Loop Principal (update):
-if (keys['Space']) {
+// Captura todos os inputs possíveis (Espaço, Botão Touch ou Clique do Mouse)
+const isShooting = state.keys['Space'] || state.touch.fire || state.isShooting;
+
+if (isShooting && p.fireCooldown <= 0 && p.ammo > 0) {
     shoot(); 
+    p.fireCooldown = C.FIRE_RATE;
+    p.ammo = Math.max(0, p.ammo - 1);
 }
+
 
 
 function initNebula() {
@@ -672,18 +674,24 @@ function spawnEnemy() {
   const hpBase = { scout: 25, fighter: 50, bomber: 80, elite: 130 };
   const spdBase = { scout: 110, fighter: 85, bomber: 55, elite: 95 };
 
-  state.enemies.push({
-    x, y, vx: 0, vy: 0,
-    hp: hpBase[type] + state.wave * 5,
-    maxHp: hpBase[type] + state.wave * 5,
-    speed: spdBase[type],
-    type, color: wc.accent,
-    angle: 0, fireCooldown: 0.8 + Math.random() * 1.5,
+state.enemies.push({
+    x: x,
+    y: y,
+    vx: 0,
+    vy: 0,
+    hp: hpBase[type] + (state.wave * 5),
+    maxHp: hpBase[type] + (state.wave * 5),
+    speed: spdBase[type], // Velocidade base do tipo de nave
+    type: type,
+    color: wc.accent,
+    angle: 0,
+    // Garante que o inimigo não atire imediatamente ao aparecer
+    fireCooldown: 1.0 + Math.random() * 2.0, 
     fireRate: 1.5 + Math.random(),
     dodge: Math.random() * 0.6,
-    id: Math.random(),
-  });
-}
+    id: Math.random()
+});
+
 
 function startWave() {
   state.waveActive = true;
@@ -703,28 +711,59 @@ function showEnvBadge(msg) {
 }
 
 function startGame() {
-  state.phase = 'playing';
-  state.score = 0; state.scoreDisplay = 0;
-  state.wave = 1; state.worldIndex = 0;
-  state.enemies = []; state.bullets = []; state.enemyBullets = []; state.particles = [];
-  state.player.hp = C.PLAYER_HP;
-  state.player.shield = C.PLAYER_SHIELD;
-  state.player.ammo = C.MAX_AMMO;
-  state.player.ammoTimer = 0;
-  state.player.x = W/2; state.player.y = H * 0.75;
-  state.player.vx = 0; state.player.vy = 0;
-  state.player.fireCooldown = 0;
-  state.player.kills = 0;
-  state.player.boostFuel = 100;
-  state.player.specialCooldown = 0;
-  state.waveTimer = 0;
-  overlay.classList.add('hidden');
-  touchControls.classList.toggle('show', isTouchDevice());
-  initStars(); initNebula(); initAsteroids();
-  envDisplay.textContent = C.WORLDS[0].split(' ')[0];
-  buildAmmoDisplay();
-  startWave();
+    state.phase = 'playing';
+    state.score = 0;
+    state.scoreDisplay = 0;
+    state.wave = 1;
+    state.worldIndex = 0;
+    
+    // Limpeza total de objetos para evitar lixo de partidas anteriores
+    state.enemies = [];
+    state.bullets = [];      // Certifique-se de que é 'bullets' e não 'projectiles'
+    state.enemyBullets = [];
+    state.particles = [];
+    state.asteroids = [];
+    state.nebulaClouds = [];
+
+    // Reset do Player
+    const p = state.player;
+    p.hp = C.PLAYER_HP;
+    p.shield = C.PLAYER_SHIELD;
+    p.ammo = C.MAX_AMMO;
+    p.ammoTimer = 0;
+    p.x = W / 2;
+    p.y = H * 0.75;
+    p.vx = 0;
+    p.vy = 0;
+    p.angle = 0;             // Resetar o ângulo para a nave não começar torta
+    p.fireCooldown = 0;
+    p.kills = 0;
+    p.boostFuel = 100;
+    p.specialCooldown = 0;
+    p.invincible = 1.0;      // Dá 1 segundo de invencibilidade ao começar
+    
+    state.waveTimer = 0;
+    state.waveActive = false;
+    state.screenShake = 0;   // Garante que a tela não comece tremendo
+
+    // Interface e Ambiente
+    overlay.classList.add('hidden');
+    touchControls.classList.toggle('show', isTouchDevice());
+    
+    initStars();
+    initNebula();
+    initAsteroids();
+    
+    // Atualiza o texto do mundo atual
+    envDisplay.textContent = C.WORLDS[state.worldIndex].split(' ')[0];
+    
+    // Reconstrói visualmente os pontos de munição no HUD
+    buildAmmoDisplay();
+    
+    // Inicia a primeira horda
+    startWave();
 }
+
 
 function buildAmmoDisplay() {
   ammoDisplay.innerHTML = '';
@@ -901,147 +940,154 @@ function update(dt) {
     }
   });
 
-  // ── Enemies ──────────────────────────────────────────
-  for (let i = state.enemies.length - 1; i >= 0; i--) {
+
+ // ── Enemies ──────────────────────────────────────────
+for (let i = state.enemies.length - 1; i >= 0; i--) {
     const e = state.enemies[i];
     const dx = p.x - e.x, dy = p.y - e.y;
-    const dist = Math.sqrt(dx*dx+dy*dy);
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1; // Evita divisão por zero
 
-    // Simple AI: home toward player with dodge
-    const targetAngle = Math.atan2(dx, -dy);
+    // 1. Ângulo de mira (Corrigido para o sistema do Canvas)
+    // Usamos atan2(dy, dx) + PI/2 para alinhar o topo da nave ao player
+    const targetAngle = Math.atan2(dy, dx) + Math.PI / 2;
+    e.angle = targetAngle;
+
+    // 2. Movimentação com Esquiva (Dodge)
     const dodgeOffset = Math.sin(Date.now() * 0.002 + e.id * 10) * e.dodge * 80;
-
     let tvx, tvy;
+
     if (e.type === 'bomber') {
-      // Bombers circle the player
-      const cirAngle = Math.atan2(dy, dx) + 0.8;
-      tvx = Math.cos(cirAngle) * e.speed + dodgeOffset;
-      tvy = Math.sin(cirAngle) * e.speed;
+        // Bombers orbitam o jogador (comportamento circular)
+        const cirAngle = Math.atan2(dy, dx) + 0.8;
+        tvx = Math.cos(cirAngle) * e.speed + (Math.cos(targetAngle) * dodgeOffset);
+        tvy = Math.sin(cirAngle) * e.speed + (Math.sin(targetAngle) * dodgeOffset);
     } else {
-      tvx = (dx/dist) * e.speed + Math.cos(targetAngle + Math.PI/2) * dodgeOffset;
-      tvy = (dy/dist) * e.speed + Math.sin(targetAngle + Math.PI/2) * dodgeOffset;
+        // Scouts e Fighters avançam diretamente com oscilação lateral
+        tvx = (dx / dist) * e.speed + Math.cos(targetAngle) * dodgeOffset;
+        tvy = (dy / dist) * e.speed + Math.sin(targetAngle) * dodgeOffset;
     }
 
+    // Suavização da velocidade (Inércia)
     e.vx += (tvx - e.vx) * dt * 3;
     e.vy += (tvy - e.vy) * dt * 3;
     e.x += e.vx * dt;
     e.y += e.vy * dt;
-    e.angle = targetAngle;
 
-    // Enemy fire
+    // 3. Sistema de Tiro dos Inimigos (Correção de Ângulo)
     e.fireCooldown -= dt;
-    if (e.fireCooldown <= 0 && dist < H * 0.7) {
-      fireBullet(e.x, e.y, targetAngle, true);
-      e.fireCooldown = e.fireRate;
+    if (e.fireCooldown <= 0 && dist < H * 0.8) {
+        // IMPORTANTE: Passamos o ângulo exato para a bala seguir a mira
+        fireBullet(e.x, e.y, e.angle, true); 
+        e.fireCooldown = e.fireRate;
     }
 
-    // Collision with player
-    if (dist < 26 && p.invincible <= 0) {
-      damagePlayer(20);
-      e.hp -= 40;
-      sfxExplosion();
-      spawnParticle(e.x, e.y, wc.accent, 10, 100, 0.4);
+    // 4. Colisão com o Player
+    if (dist < 30 && p.invincible <= 0) {
+        damagePlayer(20);
+        e.hp -= 40; // O inimigo também sofre dano no impacto
+        sfxExplosion();
+        spawnParticle(e.x, e.y, e.color, 15, 120, 0.5);
     }
 
+    // Verificação de Morte
     if (e.hp <= 0) {
-      killEnemy(e, i);
+        killEnemy(e, i);
     }
-  }
+}
 
-  // ── Player bullets ────────────────────────────────────
-  for (let i = state.bullets.length - 1; i >= 0; i--) {
+// ── Player bullets ────────────────────────────────────
+
+for (let i = state.bullets.length - 1; i >= 0; i--) {
     const b = state.bullets[i];
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.life -= dt;
-    if (b.life <= 0 || b.x < -20 || b.x > W+20 || b.y < -20 || b.y > H+20) {
-      state.bullets.splice(i, 1); continue;
+
+    if (b.life <= 0 || b.x < -50 || b.x > W + 50 || b.y < -50 || b.y > H + 50) {
+        state.bullets.splice(i, 1);
+        continue;
     }
-    // Hit enemy
+
     let hit = false;
     for (let j = state.enemies.length - 1; j >= 0; j--) {
-      const e = state.enemies[j];
-      const dx = b.x - e.x, dy = b.y - e.y;
-      if (Math.sqrt(dx*dx+dy*dy) < 22) {
-        e.hp -= 10 + state.wave * 1.5;
-        spawnParticle(b.x, b.y, wc.accent, 4, 80, 0.25);
-        state.bullets.splice(i, 1);
-        if (e.hp <= 0) killEnemy(e, j);
-        hit = true; break;
-      }
-    }
-    if (!hit) {
-      // Hit asteroid
-      for (const a of state.asteroids) {
-        const dx = b.x - a.x, dy = b.y - a.y;
-        if (Math.sqrt(dx*dx+dy*dy) < a.r) {
-          spawnParticle(b.x, b.y, '#aabbff', 3, 60, 0.2);
-          state.bullets.splice(i, 1); break;
-        }
-      }
-    }
-  }
+        const e = state.enemies[j];
+        const dx = b.x - e.x, dy = b.y - e.y;
+        const distSq = dx * dx + dy * dy; // Mais rápido que Math.sqrt
 
-  // ── Enemy bullets ─────────────────────────────────────
-  for (let i = state.enemyBullets.length - 1; i >= 0; i--) {
+        if (distSq < 22 * 22) { // 22 é o raio de colisão
+            e.hp -= (10 + state.wave * 1.5);
+            spawnParticle(b.x, b.y, wc.accent, 5, 100, 0.3);
+            state.bullets.splice(i, 1);
+            if (e.hp <= 0) killEnemy(e, j);
+            hit = true;
+            break;
+        }
+    }
+
+    if (!hit) {
+        for (const a of state.asteroids) {
+            const dx = b.x - a.x, dy = b.y - a.y;
+            if (dx * dx + dy * dy < a.r * a.r) {
+                spawnParticle(b.x, b.y, '#aabbff', 3, 60, 0.2);
+                state.bullets.splice(i, 1);
+                break;
+            }
+        }
+    }
+}
+
+
+// ── Enemy bullets ─────────────────────────────────────
+for (let i = state.enemyBullets.length - 1; i >= 0; i--) {
     const b = state.enemyBullets[i];
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.life -= dt;
-    if (b.life <= 0 || b.x < -20 || b.x > W+20 || b.y < -20 || b.y > H+20) {
-      state.enemyBullets.splice(i, 1); continue;
-    }
-    if (p.invincible <= 0) {
-      const dx = b.x - p.x, dy = b.y - p.y;
-      if (Math.sqrt(dx*dx+dy*dy) < 16) {
-        damagePlayer(8);
-        sfxHit();
+
+    if (b.life <= 0 || b.x < -20 || b.x > W + 20 || b.y < -20 || b.y > H + 20) {
         state.enemyBullets.splice(i, 1);
-      }
+        continue;
     }
-  }
 
-  // ── Particles ─────────────────────────────────────────
-  for (let i = state.particles.length - 1; i >= 0; i--) {
-    const part = state.particles[i];
-    part.x += part.vx * dt;
-    part.y += part.vy * dt;
-    part.vx *= 0.97;
-    part.vy *= 0.97;
-    part.life -= dt;
-    if (part.life <= 0) state.particles.splice(i, 1);
-  }
+    if (state.player.invincible <= 0) {
+        const dx = b.x - state.player.x, dy = b.y - state.player.y;
+        if (dx * dx + dy * dy < 16 * 16) {
+            damagePlayer(8);
+            state.enemyBullets.splice(i, 1);
+        }
+    }
+}
 
-  // ── Score interpolation ──────────────────────────────
-  state.scoreDisplay += (state.score - state.scoreDisplay) * Math.min(1, dt * 5);
 
-  // ── Screen shake decay ────────────────────────────────
-  if (state.screenShake > 0) {
-    state.screenShake -= dt * 4;
-    state.shakeX = (Math.random()-0.5) * state.screenShake * 10;
-    state.shakeY = (Math.random()-0.5) * state.screenShake * 10;
-  } else { state.shakeX = 0; state.shakeY = 0; }
-
-  // ── Wave management ──────────────────────────────────
-  if (state.waveActive && state.enemies.length === 0) {
+// ── Wave management ──────────────────────────────────
+if (state.waveActive && state.enemies.length === 0) {
     state.waveActive = false;
-    state.waveTimer = 3.0;
+    state.waveTimer = 3.0; // Tempo de espera entre ondas
     state.score += 500 * state.wave;
-    if (state.wave >= 5) {
-      gameOver(true); return;
+    
+    if (state.wave >= 5 && state.worldIndex >= C.WORLDS.length - 1) {
+        gameOver(true);
+        return;
     }
-  }
-  if (!state.waveActive && state.waveTimer > 0) {
+}
+
+if (!state.waveActive && state.waveTimer > 0) {
     state.waveTimer -= dt;
     if (state.waveTimer <= 0) {
-      state.wave++;
-      state.worldIndex = Math.min(state.wave - 1, C.WORLDS.length - 1);
-      envDisplay.textContent = C.WORLDS[state.worldIndex].split(' ')[0];
-      initNebula(); initAsteroids();
-      startWave();
+        state.wave++;
+        // Garante que o índice do mundo não ultrapasse o array de cores
+        state.worldIndex = Math.min(state.wave - 1, C.WORLD_COLORS.length - 1);
+        
+        envDisplay.textContent = C.WORLDS[state.worldIndex];
+        showEnvBadge(`${C.WORLDS[state.worldIndex]} — Onda ${state.wave}`);
+        
+        initNebula();
+        initAsteroids();
+        startWave();
     }
-  }
 }
+
+
 
 function damagePlayer(amount) {
   const p = state.player;
@@ -1064,7 +1110,7 @@ function damagePlayer(amount) {
 
 function killEnemy(e, idx) {
   sfxExplosion();
-  const wc = C.WORLD_COLORS[state.worldIndex];
+wc = C.WORLD_COLORS[state.worldIndex]; // Apenas atualiza o valor, sem redeclarar
   spawnParticle(e.x, e.y, wc.accent, 14, 120, 0.7);
   spawnParticle(e.x, e.y, '#ffdd88', 6, 80, 0.4);
   state.screenShake = Math.max(state.screenShake, 0.25);
@@ -1305,6 +1351,7 @@ function render() {
     drawEnemyHealthBar(e);
   });
 
+
   // Player bullets
   state.bullets.forEach(drawBullet);
 
@@ -1334,7 +1381,7 @@ function render() {
       ctx.stroke();
       ctx.setLineDash([]);
     }
-  }
+  }}}
 
   ctx.restore();
 
@@ -1371,66 +1418,78 @@ function drawMinimap() {
 // GAME LOOP
 // ═══════════════════════════════════════════════════════
 let _fpsFrames = 0, _fpsLast = 0, _fps = 0;
+
 function gameLoop(timestamp) {
-  requestAnimationFrame(gameLoop);
-  const ft = timestamp - (state.lastTime || timestamp);
-  state.lastTime = timestamp;
-  const delta = Math.min(ft / 1000, 0.08);
+    requestAnimationFrame(gameLoop);
+    const ft = timestamp - (state.lastTime || timestamp);
+    state.lastTime = timestamp;
+    const delta = Math.min(ft / 1000, 0.08);
 
-  // FPS counter
-  _fpsFrames++;
-  if (timestamp - _fpsLast >= 1000) {
-    _fps = (_fpsFrames * 1000) / (timestamp - _fpsLast);
-    _fpsFrames = 0; _fpsLast = timestamp;
-  }
-
-  if (state.phase === 'playing') {
-    state.accumulator += delta;
-    while (state.accumulator >= C.FIXED_STEP) {
-      update(C.FIXED_STEP);
-      state.accumulator -= C.FIXED_STEP;
+    // FPS counter
+    _fpsFrames++;
+    if (timestamp - _fpsLast >= 1000) {
+        _fps = (_fpsFrames * 1000) / (timestamp - _fpsLast);
+        _fpsFrames = 0;
+        _fpsLast = timestamp;
     }
-    render();
-    drawMinimap();
-  }
 
-  if (state.debugOn) {
-    debugOverlay.textContent = `FPS:${_fps.toFixed(0)} dt:${(ft).toFixed(1)}ms
-Enemies:${state.enemies.length} Bullets:${state.bullets.length+state.enemyBullets.length} Parts:${state.particles.length}
-Wave:${state.wave} World:${C.WORLDS[state.worldIndex]}
-P: (${Math.floor(state.player.x)},${Math.floor(state.player.y)}) HP:${Math.floor(state.player.hp)} Sh:${Math.floor(state.player.shield)}`;
-  }
+    if (state.phase === 'playing') {
+        state.accumulator += delta;
+        while (state.accumulator >= C.FIXED_STEP) {
+            update(C.FIXED_STEP);
+            state.accumulator -= C.FIXED_STEP;
+        }
+        render();
+        drawMinimap();
+    }
+
+    if (state.debugOn) {
+        debugOverlay.textContent = `FPS:${_fps.toFixed(0)} dt:${(ft).toFixed(1)}ms Enemies:${state.enemies.length} Bullets:${state.bullets.length + state.enemyBullets.length} Parts:${state.particles.length} Wave:${state.wave} World:${C.WORLDS[state.worldIndex]} P: (${Math.floor(state.player.x)},${Math.floor(state.player.y)}) HP:${Math.floor(state.player.hp)} Sh:${Math.floor(state.player.shield)}`;
+    }
 }
 
 // ═══════════════════════════════════════════════════════
 // TEST HOOKS
 // ═══════════════════════════════════════════════════════
 window.render_game_to_text = () => {
-  const p = state.player;
-  return JSON.stringify({
-    phase: state.phase, wave: state.wave, score: state.score,
-    world: C.WORLDS[state.worldIndex],
-    player: { x: Math.floor(p.x), y: Math.floor(p.y), hp: Math.floor(p.hp), shield: Math.floor(p.shield), ammo: p.ammo },
-    enemies: state.enemies.map(e => ({ x:Math.floor(e.x), y:Math.floor(e.y), hp:Math.floor(e.hp), type:e.type })),
-    bullets: state.bullets.length, enemyBullets: state.enemyBullets.length,
-  });
+    const p = state.player;
+    return JSON.stringify({
+        phase: state.phase,
+        wave: state.wave,
+        score: state.score,
+        world: C.WORLDS[state.worldIndex],
+        player: { x: Math.floor(p.x), y: Math.floor(p.y), hp: Math.floor(p.hp), shield: Math.floor(p.shield), ammo: p.ammo },
+        enemies: state.enemies.map(e => ({ x: Math.floor(e.x), y: Math.floor(e.y), hp: Math.floor(e.hp), type: e.type })),
+        bullets: state.bullets.length,
+        enemyBullets: state.enemyBullets.length,
+    });
 };
+
 window.advanceTime = (ms) => {
-  const steps = Math.max(1, Math.round(ms/(1000/60)));
-  for (let i = 0; i < steps; i++) update(1/60);
-  render();
+    const steps = Math.max(1, Math.round(ms / (1000 / 60)));
+    for (let i = 0; i < steps; i++) update(1 / 60);
+    render();
 };
 
 // ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
-btnStart.addEventListener('click', () => { getAudio(); startGame(); });
-initStars(); initNebula();
+btnStart.addEventListener('click', () => {
+    const ac = getAudio();
+    if (ac.state === 'suspended') ac.resume();
+    startGame();
+});
+
+// Inicialização de ambiente
+initStars();
+initNebula();
+
+// Inicia o Loop Principal
 requestAnimationFrame(gameLoop);
 
-// Detecta toque na tela (Mobile) ou clique (Web)
+// Controles de Toque (Mobile)
 canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault(); // Evita scroll acidental
+    e.preventDefault();
     state.isShooting = true;
 }, { passive: false });
 
@@ -1438,7 +1497,7 @@ canvas.addEventListener('touchend', () => {
     state.isShooting = false;
 });
 
-// Adicione suporte ao Mouse também:
+// Controles de Mouse (Web)
 canvas.addEventListener('mousedown', () => state.isShooting = true);
 canvas.addEventListener('mouseup', () => state.isShooting = false);
 
