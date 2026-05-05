@@ -1,151 +1,166 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Nexus Game 3D</title>
+    <title>NEXUS GAME - MOTOR INTERNO</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
-        #ui { position: absolute; top: 20px; left: 20px; color: #00d4ff; pointer-events: none; }
-        .stat { font-size: 1.2rem; margin-bottom: 5px; text-shadow: 2px 2px #000; }
+        body { margin: 0; background: #000; overflow: hidden; color: #00ff00; font-family: 'Courier New', monospace; }
+        #hud { position: absolute; top: 20px; left: 20px; text-shadow: 2px 2px #000; pointer-events: none; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
 
-<div id="ui">
-    <div class="stat">NÍVEL: <span id="level">1</span>/20</div>
-    <div class="stat">ARMA: <span id="weapon">LASER</span></div>
-    <div class="stat">SCORE: <span id="score">0</span></div>
-    <div style="font-size: 0.8rem; color: #fff;">1: Laser | 2: Hydro | 3: Nuclear</div>
-</div>
+    <div id="hud">
+        <h1 style="margin:0">NEXUS GAME</h1>
+        <div>ARMA: <span id="arma">LASER</span> | NÍVEL: <span id="lvl">1</span>/20</div>
+        <div>SCORE: <span id="score">0</span></div>
+        <div style="color: #aaa; font-size: 12px; margin-top: 10px;">[1] LASER | [2] HYDRO | [3] NUCLEAR</div>
+    </div>
 
-<script src="https://cloudflare.com"></script>
+    <canvas id="gameCanvas"></canvas>
 
-<script>
-// --- CONFIGURAÇÃO INICIAL ---
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-// --- ESTADO DO JOGO ---
-let score = 0;
-let level = 1;
-let currentWeapon = 'LASER';
-const keys = {};
-const mouse = { x: 0, y: 0 };
+        // --- ESTADO DO JOGO ---
+        let score = 0;
+        let nivel = 1;
+        let armaAtual = 'LASER';
+        let mouse = { x: canvas.width/2, y: canvas.height/2 };
+        const tiros = [];
+        const inimigos = [];
 
-// --- NAVE (3D) ---
-const shipGroup = new THREE.Group();
-const bodyGeo = new THREE.ConeGeometry(0.5, 2, 8);
-const bodyMat = new THREE.MeshPhongMaterial({ color: 0x00d4ff });
-const shipBody = new THREE.Mesh(bodyGeo, bodyMat);
-shipBody.rotation.x = Math.PI / 2;
-shipGroup.add(shipBody);
-
-const wingGeo = new THREE.BoxGeometry(2, 0.1, 0.5);
-const wing = new THREE.Mesh(wingGeo, bodyMat);
-shipGroup.add(wing);
-
-scene.add(shipGroup);
-camera.position.z = 10;
-
-// --- LUZES ---
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(0, 0, 10);
-scene.add(light);
-scene.add(new THREE.AmbientLight(0x404040));
-
-// --- TIROS ---
-const bullets = [];
-function fire() {
-    let geo, mat, speed, color;
-    
-    if(currentWeapon === 'LASER') {
-        geo = new THREE.CylinderGeometry(0.05, 0.05, 1);
-        color = 0xff0000;
-        speed = 0.5;
-    } else if(currentWeapon === 'HYDRO') {
-        geo = new THREE.SphereGeometry(0.2);
-        color = 0x00ffff;
-        speed = 0.3;
-    } else { // NUCLEAR
-        geo = new THREE.IcosahedronGeometry(0.4);
-        color = 0x00ff00;
-        speed = 0.15;
-    }
-
-    mat = new THREE.MeshBasicMaterial({ color: color });
-    const b = new THREE.Mesh(geo, mat);
-    b.position.copy(shipGroup.position);
-    if(currentWeapon === 'LASER') b.rotation.x = Math.PI / 2;
-    b.userData = { speed };
-    scene.add(b);
-    bullets.push(b);
-}
-
-// --- INPUTS ---
-window.addEventListener('keydown', e => {
-    keys[e.key.toLowerCase()] = true;
-    if(e.key === '1') currentWeapon = 'LASER';
-    if(e.key === '2') currentWeapon = 'HYDRO';
-    if(e.key === '3') currentWeapon = 'NUCLEAR';
-    if(e.key === ' ') fire();
-    document.getElementById('weapon').innerText = currentWeapon;
-});
-window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-window.addEventListener('mousemove', e => {
-    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-});
-window.addEventListener('mousedown', fire);
-
-// --- LOOP DE ANIMAÇÃO ---
-function animate() {
-    requestAnimationFrame(animate);
-
-    // Movimento Teclado
-    if(keys['w']) shipGroup.position.y += 0.1;
-    if(keys['s']) shipGroup.position.y -= 0.1;
-    if(keys['a']) shipGroup.position.x -= 0.1;
-    if(keys['d']) shipGroup.position.x += 0.1;
-
-    // Movimento Mouse (Suave)
-    shipGroup.position.x += (mouse.x * 10 - shipGroup.position.x) * 0.1;
-    shipGroup.position.y += (mouse.y * 6 - shipGroup.position.y) * 0.1;
-
-    // Inclinação da nave ao mover
-    shipGroup.rotation.y = (mouse.x * 0.5);
-    shipGroup.rotation.z = -(mouse.x * 0.5);
-
-    // Atualizar Tiros
-    bullets.forEach((b, index) => {
-        b.position.z -= b.userData.speed;
-        if(b.position.z < -20) {
-            scene.remove(b);
-            bullets.splice(index, 1);
+        // --- CLASSES ---
+        class Nave {
+            draw() {
+                ctx.save();
+                ctx.translate(mouse.x, mouse.y);
+                
+                // Desenho da Nave em Perspectiva (Pseudo-3D)
+                ctx.strokeStyle = '#00d4ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, -20); // Nariz
+                ctx.lineTo(-20, 20); // Asa esquerda
+                ctx.lineTo(0, 10);   // Traseira
+                ctx.lineTo(20, 20);  // Asa direita
+                ctx.closePath();
+                ctx.stroke();
+                
+                // Brilho do motor
+                ctx.fillStyle = '#00d4ff44';
+                ctx.fill();
+                ctx.restore();
+            }
         }
-    });
 
-    // Simulação de Score e Nível
-    score += 1;
-    document.getElementById('score').innerText = score;
-    if(score % 1000 === 0 && level < 20) {
-        level++;
-        document.getElementById('level').innerText = level;
-    }
+        class Tiro {
+            constructor(x, y, tipo) {
+                this.x = x;
+                this.y = y;
+                this.tipo = tipo;
+                this.size = tipo === 'NUCLEAR' ? 15 : 4;
+                this.color = tipo === 'LASER' ? '#ff0000' : (tipo === 'HYDRO' ? '#00ffff' : '#00ff00');
+                this.speed = tipo === 'NUCLEAR' ? 5 : 12;
+            }
+            update() { this.y -= this.speed; if(this.tipo === 'NUCLEAR') this.size += 0.5; }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
 
-    renderer.render(scene, camera);
-}
+        class Inimigo {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = -50;
+                this.size = 20 + Math.random() * 30;
+                this.speed = 1 + (nivel * 0.5);
+            }
+            update() { this.y += this.speed; }
+            draw() {
+                ctx.strokeStyle = '#ff0055';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+            }
+        }
 
-animate();
+        const player = new Nave();
 
-// Ajuste de tela
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-</script>
+        // --- CONTROLES ---
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener('mousedown', () => {
+            tiros.push(new Tiro(mouse.x, mouse.y, armaAtual));
+        });
+        window.addEventListener('keydown', e => {
+            if(e.key === '1') armaAtual = 'LASER';
+            if(e.key === '2') armaAtual = 'HYDRO';
+            if(e.key === '3') armaAtual = 'NUCLEAR';
+            document.getElementById('arma').innerText = armaAtual;
+        });
+
+        // --- LOOP PRINCIPAL ---
+        function loop() {
+            // Limpa a tela com rastro
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            player.draw();
+
+            // Gerar inimigos
+            if(Math.random() < 0.02 + (nivel * 0.005)) inimigos.push(new Inimigo());
+
+            // Processar Tiros
+            tiros.forEach((t, ti) => {
+                t.update();
+                t.draw();
+                if(t.y < 0) tiros.splice(ti, 1);
+            });
+
+            // Processar Inimigos
+            inimigos.forEach((ini, ii) => {
+                ini.update();
+                ini.draw();
+
+                // Colisão com Tiros
+                tiros.forEach((t, ti) => {
+                    let dx = t.x - ini.x;
+                    let dy = t.y - ini.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if(dist < ini.size) {
+                        inimigos.splice(ii, 1);
+                        if(t.tipo !== 'NUCLEAR') tiros.splice(ti, 1); // Nuclear atravessa!
+                        score += 100;
+                        document.getElementById('score').innerText = score;
+                        
+                        if(score % 2000 === 0 && nivel < 20) {
+                            nivel++;
+                            document.getElementById('lvl').innerText = nivel;
+                        }
+                    }
+                });
+
+                if(ini.y > canvas.height) inimigos.splice(ii, 1);
+            });
+
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
 </body>
 </html>
