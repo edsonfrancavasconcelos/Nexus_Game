@@ -605,6 +605,20 @@ function shoot() {
     state.projectiles.push(bullet);
     state.lastShotTime = now;
 }
+const keys = {};
+
+window.addEventListener('keydown', (e) => {
+    keys[e.code] = true;
+});
+
+window.addEventListener('keyup', (e) => {
+    keys[e.code] = false;
+});
+
+// No seu Loop Principal (update):
+if (keys['Space']) {
+    shoot(); 
+}
 
 
 function initNebula() {
@@ -1413,6 +1427,21 @@ window.advanceTime = (ms) => {
 btnStart.addEventListener('click', () => { getAudio(); startGame(); });
 initStars(); initNebula();
 requestAnimationFrame(gameLoop);
+
+// Detecta toque na tela (Mobile) ou clique (Web)
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // Evita scroll acidental
+    state.isShooting = true;
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => {
+    state.isShooting = false;
+});
+
+// Adicione suporte ao Mouse também:
+canvas.addEventListener('mousedown', () => state.isShooting = true);
+canvas.addEventListener('mouseup', () => state.isShooting = false);
+
 </script>
 </body>
 </html>
