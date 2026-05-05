@@ -525,6 +525,87 @@ function initStars() {
     });
   }
 }
+function drawPlayerShip(ctx, x, y, angle, state) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+
+    // 1. Sombra projetada (profundidade)
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowOffsetY = 10;
+
+    // 2. Brilho do Motor (Thrusters)
+    const enginePulse = 10 + Math.random() * 5;
+    const gradientEngine = ctx.createRadialGradient(0, 20, 0, 0, 20, enginePulse);
+    gradientEngine.addColorStop(0, '#00fbff'); // Ciano brilhante
+    gradientEngine.addColorStop(1, 'transparent');
+    
+    ctx.fillStyle = gradientEngine;
+    ctx.beginPath();
+    ctx.arc(0, 20, enginePulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Corpo da Nave (Gradiente Metálico)
+    const shipGradient = ctx.createLinearGradient(-15, 0, 15, 0);
+    shipGradient.addColorStop(0, '#2c3e50'); // Azul escuro metal
+    shipGradient.addColorStop(0.5, '#7f8c8d'); // Reflexo luz
+    shipGradient.addColorStop(1, '#2c3e50');
+
+    ctx.fillStyle = shipGradient;
+    ctx.strokeStyle = '#ecf0f1';
+    ctx.lineWidth = 1;
+
+    // Desenho do Chassi (Formato aerodinâmico)
+    ctx.beginPath();
+    ctx.moveTo(0, -25);      // Ponta (Nariz)
+    ctx.lineTo(15, 15);      // Asa Direita
+    ctx.lineTo(0, 8);        // Centro Traseiro
+    ctx.lineTo(-15, 15);     // Asa Esquerda
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 4. Detalhes da Cabine (Cockpit)
+    const cockpitGrad = ctx.createRadialGradient(0, -5, 0, 0, -5, 10);
+    cockpitGrad.addColorStop(0, '#3498db');
+    cockpitGrad.addColorStop(1, '#2980b9');
+    
+    ctx.fillStyle = cockpitGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, -5, 5, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 5. Luzes de Navegação
+    const time = Date.now() * 0.005;
+    if (Math.sin(time) > 0) {
+        ctx.fillStyle = '#e74c3c'; // Luz vermelha piscando
+        ctx.beginPath();
+        ctx.arc(-12, 10, 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.restore();
+}
+function shoot() {
+    const now = Date.now();
+    if (now - state.lastShotTime < state.shootDelay) return; // Controle de cadência
+
+    const player = state.player;
+    
+    // Criamos o projétil partindo da ponta da nave
+    const bullet = {
+        x: player.x + Math.cos(player.angle - Math.PI/2) * 25,
+        y: player.y + Math.sin(player.angle - Math.PI/2) * 25,
+        angle: player.angle,
+        speed: 10,
+        color: '#00fbff'
+    };
+
+    state.projectiles.push(bullet);
+    state.lastShotTime = now;
+}
+
 
 function initNebula() {
   const wc = C.WORLD_COLORS[state.worldIndex];
