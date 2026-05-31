@@ -1,35 +1,32 @@
 import * as THREE from 'three';
 
-// Geometria única para todos os lasers (reutilizada)
-const LASER_GEO = new THREE.CylinderGeometry(0.2, 0.2, 8, 6);
-LASER_GEO.rotateX(Math.PI / 2); // Rotaciona uma única vez na memória
+// Geometria única
+const LASER_GEO = new THREE.CylinderGeometry(0.5, 0.5, 12, 6);
+LASER_GEO.rotateX(Math.PI / 2); 
 
 export class LaserManager {
     constructor(scene) {
         this.scene = scene;
         this.lasers = [];
-        this.laserSpeed = 6.0;
+        // Aumentei a velocidade drasticamente (de 6 para 800)
+        this.laserSpeed = 850.0; 
 
-        // Materiais pré-criados
         this.matCyan = new THREE.MeshBasicMaterial({ color: 0x00ffff });
         this.matWhite = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-        // HUD / Mira
         this.hudGroup = new THREE.Group();
-        this.hudMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.8 });
+        this.hudMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 });
         const ringGeo = new THREE.RingGeometry(1.5, 1.8, 32);
         const ring = new THREE.Mesh(ringGeo, this.hudMaterial);
         this.hudGroup.add(ring);
         this.scene.add(this.hudGroup);
 
-        // Offsets fixos das armas
         this.gunOffsets = [
-            new THREE.Vector3(0, 2.2, -11.0),   // Bico
-            new THREE.Vector3(-8.2, 1.6, -7.5), // Asa Esquerda
-            new THREE.Vector3(8.2, 1.6, -7.5)   // Asa Direita
+            new THREE.Vector3(0, 2.2, -11.0),
+            new THREE.Vector3(-8.2, 1.6, -7.5),
+            new THREE.Vector3(8.2, 1.6, -7.5)
         ];
 
-        // Objetos temporários para cálculos (evita criar lixo na memória)
         this._workingVec = new THREE.Vector3();
         this._targetVec = new THREE.Vector3();
     }
@@ -39,25 +36,20 @@ export class LaserManager {
 
         for (let i = 0; i < this.gunOffsets.length; i++) {
             const offset = this.gunOffsets[i];
+            const worldGunPos = new THREE.Vector3().copy(offset).applyMatrix4(shipModel.matrixWorld);
             
-            // Calcula posição mundial da arma sem clonar o offset
-            const worldGunPos = this._workingVec.copy(offset).applyMatrix4(shipModel.matrixWorld);
-            
-            // Reutiliza geometria e seleciona material pré-definido
             const laser = new THREE.Mesh(LASER_GEO, i === 0 ? this.matWhite : this.matCyan);
-            
             laser.position.copy(worldGunPos);
             
-            // Direção do disparo em direção à mira (HUD)
+            // Direção em direção à mira
             const direction = new THREE.Vector3();
             direction.subVectors(this.hudGroup.position, worldGunPos).normalize();
 
-            // Orientação do laser
             laser.lookAt(this.hudGroup.position);
 
             laser.userData = { 
                 direction: direction, 
-                life: 120 
+                life: 3.0 // 3 segundos de vida (mais que suficiente)
             };
 
             this.scene.add(laser);
@@ -65,13 +57,11 @@ export class LaserManager {
         }
     }
 
-    update(playerMesh) {
-        if (!playerMesh) return;
+    update(playerMesh, deltaTime) {
+        if (!playerMesh || !deltaTime) return;
 
-        // Atualiza Mira (HUD) 150m à frente
-        // Usamos _targetVec para não criar "new Vector3" todo frame
-        this._targetVec.set(0, 0, -150).applyMatrix4(playerMesh.matrixWorld);
-        
+        // Atualiza Mira (HUD)
+        this._targetVec.set(0, 0, -200).applyMatrix4(playerMesh.matrixWorld);
         this.hudGroup.position.lerp(this._targetVec, 0.2);
         this.hudGroup.lookAt(playerMesh.position);
 
@@ -79,14 +69,14 @@ export class LaserManager {
         for (let i = this.lasers.length - 1; i >= 0; i--) {
             const laser = this.lasers[i];
             
-            // Move o laser usando a direção salva
-            laser.position.addScaledVector(laser.userData.direction, this.laserSpeed);
-            laser.userData.life--;
+            // AGORA USA DELTATIME: O movimento fica suave e alcança as inimigas
+            laser.position.addScaledVector(laser.userData.direction, this.laserSpeed * deltaTime);
+            
+            laser.userData.life -= deltaTime;
 
-            // Remove se a vida acabar
-            if (laser.userData.life <= 0) {
+            // Remove se a vida acabar ou se fugir muito do mapa
+            if (laser.userData.life <= 0 || laser.position.z < -2000) {
                 this.scene.remove(laser);
-                // Importante: NÃO damos dispose na geometria aqui porque ela é compartilhada!
                 this.lasers.splice(i, 1);
             }
         }
