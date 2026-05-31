@@ -201,12 +201,12 @@ var bits16 = function(d, p) {
 var shft = function(p) {
   return (p + 7) / 8 | 0;
 };
-var slc = function(v, s, e2) {
+var slc = function(v, s, e) {
   if (s == null || s < 0)
     s = 0;
-  if (e2 == null || e2 > v.length)
-    e2 = v.length;
-  return new u8(v.subarray(s, e2));
+  if (e == null || e > v.length)
+    e = v.length;
+  return new u8(v.subarray(s, e));
 };
 var ec = [
   "unexpected EOF",
@@ -227,13 +227,13 @@ var ec = [
   // determined by unknown compression method
 ];
 var err = function(ind, msg, nt) {
-  var e2 = new Error(msg || ec[ind]);
-  e2.code = ind;
+  var e = new Error(msg || ec[ind]);
+  e.code = ind;
   if (Error.captureStackTrace)
-    Error.captureStackTrace(e2, err);
+    Error.captureStackTrace(e, err);
   if (!nt)
-    throw e2;
-  return e2;
+    throw e;
+  return e;
 };
 var inflt = function(dat, st, buf, dict) {
   var sl = dat.length, dl = dict ? dict.length : 0;
@@ -394,7 +394,7 @@ var tds = 0;
 try {
   td.decode(et, { stream: true });
   tds = 1;
-} catch (e2) {
+} catch (e) {
 }
 var dutf8 = function(d) {
   for (var r = "", i = 0; ; ) {
@@ -436,10 +436,10 @@ var zh = function(d, b, z) {
   return [b2(d, b + 10), sc, su, fn, es + efl + b2(d, b + 32), off];
 };
 var z64hs = function(d, b, l, z, sc, su, off) {
-  var nsc = sc == 4294967295, nsu = su == 4294967295, noff = off == 4294967295, e2 = b + l;
+  var nsc = sc == 4294967295, nsu = su == 4294967295, noff = off == 4294967295, e = b + l;
   var nf = nsc + nsu + noff;
   if (z && nf) {
-    for (; b + 4 < e2; b += 4 + b2(d, b + 2)) {
+    for (; b + 4 < e; b += 4 + b2(d, b + 2)) {
       if (b2(d, b) == 1) {
         return [
           nsc ? b8(d, b + 4 + 8 * nsu) : sc,
@@ -456,18 +456,18 @@ var z64hs = function(d, b, l, z, sc, su, off) {
 };
 function unzipSync(data, opts) {
   var files = {};
-  var e2 = data.length - 22;
-  for (; b4(data, e2) != 101010256; --e2) {
-    if (!e2 || data.length - e2 > 65558)
+  var e = data.length - 22;
+  for (; b4(data, e) != 101010256; --e) {
+    if (!e || data.length - e > 65558)
       err(13);
   }
-  var c = b2(data, e2 + 8);
+  var c = b2(data, e + 8);
   if (!c)
     return {};
-  var o = b4(data, e2 + 16);
-  var z = b4(data, e2 - 20) == 117853008;
+  var o = b4(data, e + 16);
+  var z = b4(data, e - 20) == 117853008;
   if (z) {
-    var ze = b4(data, e2 - 12);
+    var ze = b4(data, e - 12);
     z = b4(data, ze) == 101075792;
     if (z) {
       c = b4(data, ze + 32);
@@ -534,7 +534,7 @@ class SoundManager {
     if (name === "nave") {
       if (sound.paused) {
         sound.loop = true;
-        sound.play().catch((e2) => console.log("Bloqueio de áudio:", e2));
+        sound.play().catch((e) => console.log("Bloqueio de áudio:", e));
       }
       return;
     }
@@ -568,152 +568,87 @@ class SoundManager {
 }
 class InputManager {
   constructor() {
-    this.moveInput = {
-      x: 0,
-      y: 0
-    };
+    this.moveInput = { x: 0, y: 0 };
     this.keys = {
       ArrowUp: false,
       ArrowDown: false,
       ArrowLeft: false,
       ArrowRight: false,
       Space: false
-      // Adicionado
     };
-    if (e.code === "Space") {
-      e.preventDefault();
-      this.keys.Space = true;
-    }
-    if (e.code === "Space") {
-      this.keys.Space = false;
-    }
     this.inputAcceleration = 0.22;
-    this.inputSmoothness = 0.18;
     this.currentX = 0;
     this.currentY = 0;
     this.joystickActive = false;
     this._initKeyboard();
     this._initJoystick();
   }
-  // =====================================
-  // TECLADO
-  // =====================================
   _initKeyboard() {
-    window.addEventListener(
-      "keydown",
-      (e2) => {
-        if (e2.code in this.keys) {
-          e2.preventDefault();
-          this.keys[e2.code] = true;
-        }
+    window.addEventListener("keydown", (event) => {
+      if (this.keys.hasOwnProperty(event.code)) {
+        event.preventDefault();
+        this.keys[event.code] = true;
       }
-    );
-    window.addEventListener(
-      "keyup",
-      (e2) => {
-        if (e2.code in this.keys) {
-          this.keys[e2.code] = false;
-        }
+    });
+    window.addEventListener("keyup", (event) => {
+      if (this.keys.hasOwnProperty(event.code)) {
+        this.keys[event.code] = false;
       }
-    );
-    window.addEventListener(
-      "blur",
-      () => {
-        for (let key in this.keys) {
-          this.keys[key] = false;
-        }
-        this.currentX = 0;
-        this.currentY = 0;
-        this.moveInput.x = 0;
-        this.moveInput.y = 0;
-      }
-    );
+    });
+    window.addEventListener("blur", () => {
+      Object.keys(this.keys).forEach((key) => this.keys[key] = false);
+      this.currentX = 0;
+      this.currentY = 0;
+      this.moveInput.x = 0;
+      this.moveInput.y = 0;
+    });
   }
-  // =====================================
-  // JOYSTICK MOBILE
-  // =====================================
   _initJoystick() {
-    const joystickArea = document.getElementById(
-      "joystick-area"
-    );
-    const stick = document.getElementById(
-      "stick"
-    );
-    if (!joystickArea || !stick)
-      return;
+    const joystickArea = document.getElementById("joystick-area");
+    const stick = document.getElementById("stick");
+    if (!joystickArea || !stick) return;
     let touchStartX = 0;
     let touchStartY = 0;
     const maxDistance = 65;
-    joystickArea.addEventListener(
-      "touchstart",
-      (e2) => {
-        this.joystickActive = true;
-        const touch = e2.targetTouches || e2.touches;
-        touchStartX = touch[0].clientX;
-        touchStartY = touch[0].clientY;
-      }
-    );
-    joystickArea.addEventListener(
-      "touchmove",
-      (e2) => {
-        if (!this.joystickActive)
-          return;
-        const touch = e2.targetTouches || e2.touches;
-        const deltaX = touch[0].clientX - touchStartX;
-        const deltaY = touch[0].clientY - touchStartY;
-        const distance = Math.min(
-          Math.sqrt(
-            deltaX * deltaX + deltaY * deltaY
-          ),
-          maxDistance
-        );
-        const angle = Math.atan2(
-          deltaY,
-          deltaX
-        );
-        const moveX = Math.cos(angle) * distance;
-        const moveY = Math.sin(angle) * distance;
-        stick.style.transform = `translate(${moveX}px, ${moveY}px) scale(1.15)`;
-        this.moveInput.x = moveX / maxDistance;
-        this.moveInput.y = -(moveY / maxDistance);
-      }
-    );
-    joystickArea.addEventListener(
-      "touchend",
-      () => {
-        this.joystickActive = false;
-        stick.style.transform = "translate(0px, 0px) scale(1)";
-        this.moveInput.x = 0;
-        this.moveInput.y = 0;
-      }
-    );
+    joystickArea.addEventListener("touchstart", (event) => {
+      this.joystickActive = true;
+      const touch = event.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: false });
+    joystickArea.addEventListener("touchmove", (event) => {
+      if (!this.joystickActive) return;
+      event.preventDefault();
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY), maxDistance);
+      const angle = Math.atan2(deltaY, deltaX);
+      const moveX = Math.cos(angle) * distance;
+      const moveY = Math.sin(angle) * distance;
+      stick.style.transform = `translate(${moveX}px, ${moveY}px) scale(1.15)`;
+      this.moveInput.x = moveX / maxDistance;
+      this.moveInput.y = -(moveY / maxDistance);
+    }, { passive: false });
+    joystickArea.addEventListener("touchend", () => {
+      this.joystickActive = false;
+      stick.style.transform = "translate(0px, 0px) scale(1)";
+      this.moveInput.x = 0;
+      this.moveInput.y = 0;
+    });
   }
-  // =====================================
-  // UPDATE
-  // =====================================
   update() {
     if (!this.joystickActive) {
-      let targetX = 0;
-      let targetY = 0;
-      if (this.keys.ArrowLeft)
-        targetX = -1;
-      if (this.keys.ArrowRight)
-        targetX = 1;
-      if (this.keys.ArrowUp)
-        targetY = 1;
-      if (this.keys.ArrowDown)
-        targetY = -1;
-      this.currentX = this.currentX + (targetX - this.currentX) * this.inputAcceleration;
-      this.currentY = this.currentY + (targetY - this.currentY) * this.inputAcceleration;
-      return {
-        x: this.currentX,
-        y: this.currentY
-      };
+      let targetX = 0, targetY = 0;
+      if (this.keys.ArrowLeft) targetX = -1;
+      if (this.keys.ArrowRight) targetX = 1;
+      if (this.keys.ArrowUp) targetY = 1;
+      if (this.keys.ArrowDown) targetY = -1;
+      this.currentX += (targetX - this.currentX) * this.inputAcceleration;
+      this.currentY += (targetY - this.currentY) * this.inputAcceleration;
+      return { x: this.currentX, y: this.currentY };
     }
-    return {
-      x: this.moveInput.x * 1.7,
-      y: this.moveInput.y * 1.7
-    };
+    return { x: this.moveInput.x * 1.7, y: this.moveInput.y * 1.7 };
   }
 }
 function toTrianglesDrawMode(geometry, drawMode) {
@@ -841,11 +776,11 @@ class GLTFLoader extends Loader {
       resourcePath = LoaderUtils.extractUrlBase(url);
     }
     this.manager.itemStart(url);
-    const _onError = function(e2) {
+    const _onError = function(e) {
       if (onError) {
-        onError(e2);
+        onError(e);
       } else {
-        console.error(e2);
+        console.error(e);
       }
       scope.manager.itemError(url);
       scope.manager.itemEnd(url);
@@ -861,8 +796,8 @@ class GLTFLoader extends Loader {
           onLoad(gltf);
           scope.manager.itemEnd(url);
         }, _onError);
-      } catch (e2) {
-        _onError(e2);
+      } catch (e) {
+        _onError(e);
       }
     }, onProgress, _onError);
   }
@@ -3312,24 +3247,24 @@ class Player {
     this.thrusters.push({ core, light });
   }
   _initKeyboard() {
-    const handleKey = (e2, val) => {
-      if (e2.code === "KeyF" || e2.code === "Space") this.isFiring = val;
+    const handleKey = (e, val) => {
+      if (e.code === "KeyF" || e.code === "Space") this.isFiring = val;
     };
-    window.addEventListener("keydown", (e2) => handleKey(e2, true));
-    window.addEventListener("keyup", (e2) => handleKey(e2, false));
+    window.addEventListener("keydown", (e) => handleKey(e, true));
+    window.addEventListener("keyup", (e) => handleKey(e, false));
   }
   _initTouchControls() {
     const shootBtn = document.getElementById("shootBtn");
     if (shootBtn) {
-      shootBtn.addEventListener("pointerdown", (e2) => {
-        e2.preventDefault();
+      shootBtn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
         this.isFiring = true;
       });
-      shootBtn.addEventListener("pointerup", (e2) => {
-        e2.preventDefault();
+      shootBtn.addEventListener("pointerup", (e) => {
+        e.preventDefault();
         this.isFiring = false;
       });
-      shootBtn.addEventListener("pointerleave", (e2) => {
+      shootBtn.addEventListener("pointerleave", (e) => {
         this.isFiring = false;
       });
     }
@@ -3542,7 +3477,7 @@ class EnemyManager {
     }
   }
   clearAllEnemies() {
-    this.enemies.forEach((e2) => this.scene.remove(e2));
+    this.enemies.forEach((e) => this.scene.remove(e));
     this.enemyProjectiles.forEach((p) => this.scene.remove(p.mesh));
     this.enemies = [];
     this.enemyProjectiles = [];
@@ -3602,84 +3537,87 @@ const GEO = {
   smoke: new SphereGeometry(3, 6, 6)
 };
 const BASE_MATS = {
-  debris: new MeshLambertMaterial({ color: 2236962, flatShading: true, transparent: true }),
-  smoke: new MeshBasicMaterial({ color: 1118481, transparent: true, opacity: 0.6 })
+  debris: new MeshLambertMaterial({
+    color: 2236962,
+    flatShading: true,
+    transparent: true
+  }),
+  smoke: new MeshBasicMaterial({
+    color: 1118481,
+    transparent: true,
+    opacity: 0.6
+  })
 };
 class ExplosionManager {
   constructor(scene2) {
     this.scene = scene2;
     this.explosions = [];
     this.cameraRef = null;
-    this.shakeIntensity = 0;
   }
-  create(position, camera2) {
+  create(position, camera2 = null) {
     if (camera2) this.cameraRef = camera2;
     const group = new Group();
     group.position.copy(position);
     this.scene.add(group);
     const fragments = [];
     const addFragment = (geometry, material, count, isSmoke) => {
-      const instanceMat = material.clone();
       for (let i = 0; i < count; i++) {
+        const instanceMat = material.clone();
         const mesh = new Mesh(geometry, instanceMat);
-        const s = 0.5 + Math.random();
+        const s = isSmoke ? 1 + Math.random() * 2 : 0.3 + Math.random() * 0.7;
         mesh.scale.set(s, s, s);
         group.add(mesh);
         fragments.push({
           mesh,
           isSmoke,
           velocity: new Vector3(
-            (Math.random() - 0.5) * (isSmoke ? 0.5 : 1.5),
-            Math.random() * (isSmoke ? 0.8 : 1.2),
-            (Math.random() - 0.5) * (isSmoke ? 0.5 : 1.5)
+            (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5),
+            (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5),
+            (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5)
           ),
-          gravity: isSmoke ? 0 : 0.05,
-          rot: new Vector3(Math.random() * 0.1, Math.random() * 0.1, Math.random() * 0.1)
+          initialScale: s
         });
       }
     };
-    addFragment(GEO.debris, BASE_MATS.debris, 10, false);
-    addFragment(GEO.smoke, BASE_MATS.smoke, 8, true);
-    const mainLight = new PointLight(16729088, 50, 100);
+    addFragment(GEO.debris, BASE_MATS.debris, 12, false);
+    addFragment(GEO.smoke, BASE_MATS.smoke, 6, true);
+    const mainLight = new PointLight(16755200, 100, 40);
     group.add(mainLight);
-    this.shakeIntensity = 0.8;
     this.explosions.push({
       group,
       mainLight,
       fragments,
       life: 1,
-      decay: 0.015
-      // Explosão dura um pouco mais para suavizar CPU
+      decay: 0.028
     });
   }
   update() {
-    if (this.cameraRef && this.shakeIntensity > 0.01) {
-      this.cameraRef.position.x += (Math.random() - 0.5) * this.shakeIntensity;
-      this.cameraRef.position.y += (Math.random() - 0.5) * this.shakeIntensity;
-      this.shakeIntensity *= 0.9;
-    }
     for (let i = this.explosions.length - 1; i >= 0; i--) {
       const exp = this.explosions[i];
       exp.life -= exp.decay;
-      exp.mainLight.intensity = exp.life * 50;
-      for (let j = 0; j < exp.fragments.length; j++) {
-        const frag = exp.fragments[j];
+      exp.mainLight.intensity = exp.life * 100;
+      for (let frag of exp.fragments) {
+        frag.velocity.multiplyScalar(0.95);
         frag.mesh.position.add(frag.velocity);
-        if (frag.gravity > 0) frag.velocity.y -= frag.gravity;
         if (frag.isSmoke) {
-          frag.mesh.scale.multiplyScalar(1.01);
-          frag.mesh.material.opacity = exp.life * 0.5;
+          frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 2));
+          frag.mesh.material.opacity = exp.life * 0.35;
         } else {
-          frag.mesh.rotation.x += frag.rot.x;
-          frag.mesh.rotation.y += frag.rot.y;
-          frag.mesh.material.opacity = exp.life;
+          frag.mesh.rotation.x += 0.12;
+          frag.mesh.rotation.z += 0.08;
+          frag.mesh.material.opacity = exp.life * 0.9;
+          frag.mesh.material.color.setRGB(
+            exp.life * 0.8,
+            exp.life * 0.4,
+            0
+          );
         }
       }
       if (exp.life <= 0) {
         this.scene.remove(exp.group);
         const uniqueMaterials = /* @__PURE__ */ new Set();
         exp.fragments.forEach((f) => uniqueMaterials.add(f.mesh.material));
-        uniqueMaterials.forEach((m) => m.dispose());
+        uniqueMaterials.forEach((mat) => mat.dispose());
         this.explosions.splice(i, 1);
       }
     }
@@ -3780,18 +3718,13 @@ function animate(now) {
   }
 }
 window.addEventListener("DOMContentLoaded", () => {
-  const startBtn = document.getElementById("start-btn");
-  if (startBtn) {
-    startBtn.addEventListener("click", () => {
-      if (!audioInitialized) {
-        soundManager.init();
-        audioInitialized = true;
-      }
-      startGame();
-    });
-  }
-  initGame().then(() => {
-    console.log("Assets carregados, pronto para iniciar.");
-    animate(0);
-  }).catch((err2) => console.error("Erro ao carregar assets:", err2));
+  var _a2;
+  (_a2 = document.getElementById("start-btn")) == null ? void 0 : _a2.addEventListener("click", () => {
+    if (!audioInitialized) {
+      soundManager.init();
+      audioInitialized = true;
+    }
+    startGame();
+  });
+  initGame().then(() => animate(0));
 });
