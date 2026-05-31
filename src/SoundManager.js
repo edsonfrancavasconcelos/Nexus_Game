@@ -15,6 +15,7 @@ export class SoundManager {
     _loadInitialSounds() {
         this._createAudio('laser', '/assets/sounds/laser.mp3');
         this._createAudio('nave', '/assets/sounds/nave.mp3');
+         this._createAudio('nave', '/assets/sounds/inimiga_passando.mp3');
     }
 
     init() {
