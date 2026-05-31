@@ -1,21 +1,23 @@
 import * as THREE from 'three';
 
-// Recursos Compartilhados (criados apenas uma vez)
 const GEO = {
-    debris: new THREE.DodecahedronGeometry(1.5, 0),
-    smoke: new THREE.SphereGeometry(3, 6, 6)
+    debris: new THREE.DodecahedronGeometry(1.8, 0),
+    smoke: new THREE.SphereGeometry(4, 8, 8)
 };
 
 const BASE_MATS = {
     debris: new THREE.MeshLambertMaterial({ 
-        color: 0x222222, 
+        color: 0xff8800, 
         flatShading: true, 
-        transparent: true 
+        transparent: true,
+        emissive: 0xff4400,
+        emissiveIntensity: 0.6
     }),
     smoke: new THREE.MeshBasicMaterial({ 
-        color: 0x111111, 
+        color: 0x666666, 
         transparent: true, 
-        opacity: 0.6 
+        opacity: 0.7,
+        depthWrite: false
     })
 };
 
@@ -23,11 +25,13 @@ export class ExplosionManager {
     constructor(scene) {
         this.scene = scene;
         this.explosions = [];
-        this.cameraRef = null;
     }
 
     create(position, camera = null) {
-        if (camera) this.cameraRef = camera;
+        if (!position) {
+            console.warn("Explosion created without position!");
+            position = new THREE.Vector3(0, 0, 0);
+        }
 
         const group = new THREE.Group();
         group.position.copy(position);
@@ -37,41 +41,57 @@ export class ExplosionManager {
 
         const addFragment = (geometry, material, count, isSmoke) => {
             for (let i = 0; i < count; i++) {
-                const instanceMat = material.clone();
-                const mesh = new THREE.Mesh(geometry, instanceMat);
+                const mat = material.clone();
+                const mesh = new THREE.Mesh(geometry, mat);
 
-                const s = isSmoke ? (1 + Math.random() * 2) : (0.3 + Math.random() * 0.7);
+                const s = isSmoke ? (2 + Math.random() * 3) : (0.6 + Math.random() * 1.2);
                 mesh.scale.set(s, s, s);
+                
+                // Posição inicial aleatória
+                mesh.position.set(
+                    (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 3
+                );
+
                 group.add(mesh);
 
                 fragments.push({
                     mesh,
                     isSmoke,
                     velocity: new THREE.Vector3(
-                        (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5),
-                        (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5),
-                        (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5)
+                        (Math.random() - 0.5) * (isSmoke ? 6 : 14),
+                        (Math.random() - 0.5) * (isSmoke ? 5 : 12) + 4, // leve impulso para cima
+                        (Math.random() - 0.5) * (isSmoke ? 6 : 14)
                     ),
-                    initialScale: s
+                    initialScale: s,
+                    rotationSpeed: new THREE.Vector3(
+                        Math.random() * 0.3 - 0.15,
+                        Math.random() * 0.3 - 0.15,
+                        Math.random() * 0.3 - 0.15
+                    )
                 });
             }
         };
 
-        // Cria fragmentos
-        addFragment(GEO.debris, BASE_MATS.debris, 12, false);
-        addFragment(GEO.smoke, BASE_MATS.smoke, 6, true);
+        // Cria os pedaços
+        addFragment(GEO.debris, BASE_MATS.debris, 18, false);
+        addFragment(GEO.smoke, BASE_MATS.smoke, 8, true);
 
-        // Luz da explosão
-        const mainLight = new THREE.PointLight(0xffaa00, 100, 40);
-        group.add(mainLight);
+        // Luz forte da explosão
+        const explosionLight = new THREE.PointLight(0xffaa33, 120, 80);
+        explosionLight.position.set(0, 2, 0);
+        group.add(explosionLight);
 
         this.explosions.push({
             group,
-            mainLight,
+            light: explosionLight,
             fragments,
             life: 1.0,
-            decay: 0.028
+            decay: 0.022
         });
+
+        console.log(`💥 Explosion created at`, position);
     }
 
     update() {
@@ -79,40 +99,34 @@ export class ExplosionManager {
             const exp = this.explosions[i];
             exp.life -= exp.decay;
 
-            // Atualiza luz
-            exp.mainLight.intensity = exp.life * 100;
+            exp.light.intensity = exp.life * 120;
 
             for (let frag of exp.fragments) {
-                // Movimento
-                frag.velocity.multiplyScalar(0.95);
+                frag.velocity.multiplyScalar(0.94);
                 frag.mesh.position.add(frag.velocity);
 
+                // Gravidade leve
+                frag.velocity.y -= 0.12;
+
                 if (frag.isSmoke) {
-                    // Fumaça
-                    frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 2));
-                    frag.mesh.material.opacity = exp.life * 0.35;
+                    frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 3));
+                    frag.mesh.material.opacity = exp.life * 0.6;
                 } else {
-                    // Detritos
-                    frag.mesh.rotation.x += 0.12;
-                    frag.mesh.rotation.z += 0.08;
-                    frag.mesh.material.opacity = exp.life * 0.9;
-                    frag.mesh.material.color.setRGB(
-                        exp.life * 0.8,
-                        exp.life * 0.4,
-                        0
-                    );
+                    // Rotação
+                    frag.mesh.rotation.x += frag.rotationSpeed.x;
+                    frag.mesh.rotation.y += frag.rotationSpeed.y;
+                    frag.mesh.rotation.z += frag.rotationSpeed.z;
+
+                    frag.mesh.material.opacity = Math.max(0.1, exp.life * 1.1);
                 }
             }
 
-            // Remover explosão quando acabar
             if (exp.life <= 0) {
                 this.scene.remove(exp.group);
-
-                // Limpeza de materiais
-                const uniqueMaterials = new Set();
-                exp.fragments.forEach(f => uniqueMaterials.add(f.mesh.material));
-                uniqueMaterials.forEach(mat => mat.dispose());
-
+                exp.light.dispose();
+                exp.fragments.forEach(f => {
+                    f.mesh.material.dispose();
+                });
                 this.explosions.splice(i, 1);
             }
         }

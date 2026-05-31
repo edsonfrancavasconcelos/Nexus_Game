@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { unzipSync, strFromU8 } from 'fflate';
-window.fflate = { unzipSync, strFromU8 };
 
 import { SoundManager } from './SoundManager.js';
 import { InputManager } from './InputManager.js';
@@ -12,11 +11,9 @@ import { ExplosionManager } from './ExplosionManager.js';
 import { SpaceEnvironment } from './SpaceEnvironment.js';
 import { ProgressionManager } from './ProgressionManager.js';
 
-window.fflate = fflate;
-
 // --- DECLARAÇÕES GLOBAIS ---
 let audioInitialized = false;
-let currentState = 'menu'; // Valor inicial
+let currentState = 'menu';
 let score = 0;
 
 const GAME_STATE = { MENU: 'menu', PLAYING: 'playing', PAUSED: 'paused', GAME_OVER: 'game_over' };
@@ -25,12 +22,17 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x010103);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1500);
-camera.position.set(0, 5, 55);
+camera.position.set(0, 8, 60);
 
-const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", precision: "mediump" });
+const renderer = new THREE.WebGLRenderer({ 
+    antialias: true, 
+    powerPreference: "high-performance" 
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 document.body.appendChild(renderer.domElement);
 
+// Instâncias
 const soundManager = new SoundManager();
 const laserManager = new LaserManager(scene);
 const player = new Player(scene, laserManager);
@@ -54,6 +56,7 @@ async function initGame() {
 
 function startGame() {
     if (currentState === GAME_STATE.PLAYING) return;
+    
     currentState = GAME_STATE.PLAYING;
     score = 0;
     document.getElementById('overlay').style.display = 'none';
@@ -61,57 +64,71 @@ function startGame() {
     player.mesh.position.set(0, -1, 8);
     enemyManager.clearAllEnemies();
     enemyManager.spawnWave(player);
+    
     soundManager.play('nave');
     updateHUD();
 }
 
 // --- LOOP PRINCIPAL ---
 let lastTime = 0;
-function animate(now) {
+
+function animate(now = 0) {
     requestAnimationFrame(animate);
+    
     const deltaTime = Math.min((now - lastTime) / 1000, 0.1);
     lastTime = now;
 
     if (currentState === GAME_STATE.PLAYING) {
         const input = inputManager.update();
-        
-        // Disparo
+
+        // Disparo do jogador
         if (inputManager.keys.Space) {
-            if (!player.lastFireTime || now - player.lastFireTime > 250) {
-                laserManager.fire(player.mesh, player.mesh);
+            if (!player.lastFireTime || now - player.lastFireTime > 220) {
+                laserManager.fire(player.mesh.position, camera);
                 soundManager.play('laser');
                 player.lastFireTime = now;
             }
         }
-        
+
         player.update(input, deltaTime);
-        laserManager.update(player.mesh, deltaTime);
+        laserManager.update(deltaTime);
         
-        // UPDATE DO ENEMY MANAGER (CRÍTICO)
+        // Atualiza inimigos (aqui deve estar chamando explosões)
         enemyManager.update(
             laserManager, 
-            (pts) => { score += pts; updateHUD(); }, 
+            (pts) => { 
+                score += pts; 
+                updateHUD(); 
+            }, 
             player, 
             deltaTime, 
             explosionManager, 
             soundManager
         );
 
-        explosionManager.update(deltaTime);
+        // Atualiza explosões e outros sistemas
+        explosionManager.update();
         starfieldManager.update(deltaTime);
+        spaceEnvironment.update?.(deltaTime);
+
         renderer.render(scene, camera);
     }
 }
 
 // --- INICIALIZAÇÃO ---
 window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('start-btn')?.addEventListener('click', () => {
-        if (!audioInitialized) {
-            soundManager.init();
-            audioInitialized = true;
-        }
-        startGame();
-    });
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            if (!audioInitialized) {
+                soundManager.init();
+                audioInitialized = true;
+            }
+            startGame();
+        });
+    }
 
-    initGame().then(() => animate(0));
+    initGame().then(() => {
+        animate(0);
+    });
 });
