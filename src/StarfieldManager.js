@@ -16,8 +16,9 @@ export class StarfieldManager {
     _loadSpace() {
         const loader = new GLTFLoader();
 
+        // O caminho deve começar com '/' para ser buscado na raiz do site no Vercel
         loader.load(
-           // 'assets/models/spaco.glb', 
+            '/assets/models/spaco.glb', 
             (gltf) => {
                 this.spaceMesh = gltf.scene;
 
@@ -25,36 +26,35 @@ export class StarfieldManager {
                 this.spaceMesh.scale.set(500, 500, 500);
                 this.spaceMesh.position.set(0, 0, 0);
 
-        // Localize essa parte dentro do seu loader.load em src/StarfieldManager.js
-this.spaceMesh.traverse((child) => {
-    if (child.isMesh) {
-        if (child.material) {
-            child.material.side = THREE.DoubleSide; 
-            child.material.roughness = 1.0;
-            child.material.metalness = 0.0;
+                this.spaceMesh.traverse((child) => {
+                    if (child.isMesh) {
+                        if (child.material) {
+                            child.material.side = THREE.DoubleSide; 
+                            child.material.roughness = 1.0;
+                            child.material.metalness = 0.0;
 
-            // =========================================================
-            // CORREÇÃO CRÍTICA PARA EVITAR QUE AS NAVES FIQUEM INVISÍVEIS
-            // =========================================================
-            child.material.depthWrite = false; // Impede que o fundo oculte as naves
-            child.renderOrder = 0;             // Força o espaço a ser desenhado PRIMEIRO
-            
-            if (child.material.map) {
-                child.material.emissive = new THREE.Color(0xffffff);
-                child.material.emissiveMap = child.material.map;
-                child.material.emissiveIntensity = 1.0;
-            }
-        }
-    }
-});
-
+                            // Correção para não ocultar outros objetos
+                            child.material.depthWrite = false; 
+                            child.renderOrder = 0; 
+                            
+                            if (child.material.map) {
+                                child.material.emissive = new THREE.Color(0xffffff);
+                                child.material.emissiveMap = child.material.map;
+                                child.material.emissiveIntensity = 1.0;
+                            }
+                        }
+                    }
+                });
 
                 this.scene.add(this.spaceMesh);
                 console.log('Cenário espacial em rotação carregado!');
             },
-            undefined,
+            (progress) => {
+                // Opcional: logar progresso de carregamento
+                console.log('Carregando espaço: ' + (progress.loaded / progress.total * 100) + '%');
+            },
             (error) => {
-                console.error('Erro ao carregar o arquivo do espaço:', error);
+                console.error('Erro ao carregar o arquivo do espaço (Verifique se o arquivo está na pasta public/assets/models/):', error);
             }
         );
     }
