@@ -1,4 +1,4 @@
-import { ai as TrianglesDrawMode, ag as TriangleFanDrawMode, ah as TriangleStripDrawMode, H as Loader, J as LoaderUtils, F as FileLoader, R as MeshPhysicalMaterial, aj as Vector2, f as Color, E as LinearSRGBColorSpace, a7 as SRGBColorSpace, ad as SpotLight, $ as PointLight, D as DirectionalLight, N as Matrix4, ak as Vector3, o as InstancedMesh, a3 as Quaternion, n as InstancedBufferAttribute, Y as Object3D, af as TextureLoader, I as ImageBitmapLoader, d as BufferAttribute, p as InterleavedBuffer, y as LinearMipmapLinearFilter, V as NearestMipmapLinearFilter, z as LinearMipmapNearestFilter, W as NearestMipmapNearestFilter, x as LinearFilter, U as NearestFilter, a5 as RepeatWrapping, T as MirroredRepeatWrapping, C as ClampToEdgeWrapping, a1 as PointsMaterial, M as Material, u as LineBasicMaterial, S as MeshStandardMaterial, k as DoubleSide, P as MeshBasicMaterial, a2 as PropertyBinding, e as BufferGeometry, aa as SkinnedMesh, O as Mesh, w as LineSegments, L as Line, v as LineLoop, a0 as Points, G as Group, _ as PerspectiveCamera, K as MathUtils, Z as OrthographicCamera, a9 as Skeleton, b as AnimationClip, B as Bone, s as InterpolateDiscrete, t as InterpolateLinear, q as InterleavedBufferAttribute, ae as Texture, al as VectorKeyframeTrack, X as NumberKeyframeTrack, a4 as QuaternionKeyframeTrack, g as ColorManagement, m as FrontSide, r as Interpolant, c as Box3, ab as Sphere, A as AdditiveBlending, h as ConeGeometry, i as CylinderGeometry, a6 as RingGeometry, ac as SphereGeometry, j as DodecahedronGeometry, Q as MeshLambertMaterial, a as AmbientLight, l as FogExp2, a8 as Scene, am as WebGLRenderer } from "./three-D8WVNG1D.js";
+import { aj as TrianglesDrawMode, ah as TriangleFanDrawMode, ai as TriangleStripDrawMode, J as Loader, K as LoaderUtils, F as FileLoader, S as MeshPhysicalMaterial, ak as Vector2, g as Color, H as LinearSRGBColorSpace, a8 as SRGBColorSpace, ae as SpotLight, a0 as PointLight, D as DirectionalLight, O as Matrix4, al as Vector3, p as InstancedMesh, a4 as Quaternion, o as InstancedBufferAttribute, Z as Object3D, ag as TextureLoader, I as ImageBitmapLoader, e as BufferAttribute, q as InterleavedBuffer, z as LinearMipmapLinearFilter, W as NearestMipmapLinearFilter, E as LinearMipmapNearestFilter, X as NearestMipmapNearestFilter, y as LinearFilter, V as NearestFilter, a6 as RepeatWrapping, U as MirroredRepeatWrapping, C as ClampToEdgeWrapping, a2 as PointsMaterial, M as Material, v as LineBasicMaterial, T as MeshStandardMaterial, l as DoubleSide, Q as MeshBasicMaterial, a3 as PropertyBinding, f as BufferGeometry, ab as SkinnedMesh, P as Mesh, x as LineSegments, L as Line, w as LineLoop, a1 as Points, G as Group, $ as PerspectiveCamera, N as MathUtils, _ as OrthographicCamera, aa as Skeleton, b as AnimationClip, B as Bone, t as InterpolateDiscrete, u as InterpolateLinear, r as InterleavedBufferAttribute, af as Texture, am as VectorKeyframeTrack, Y as NumberKeyframeTrack, a5 as QuaternionKeyframeTrack, h as ColorManagement, n as FrontSide, s as Interpolant, d as Box3, ac as Sphere, A as AdditiveBlending, i as ConeGeometry, j as CylinderGeometry, a7 as RingGeometry, ad as SphereGeometry, k as DodecahedronGeometry, R as MeshLambertMaterial, a as AmbientLight, m as FogExp2, a9 as Scene, c as AudioListener, an as WebGLRenderer } from "./three-CaA98OIr.js";
 (function polyfill() {
   const relList = document.createElement("link").relList;
   if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -36,6 +36,464 @@ import { ai as TrianglesDrawMode, ag as TriangleFanDrawMode, ah as TriangleStrip
     fetch(link.href, fetchOpts);
   }
 })();
+var u8 = Uint8Array, u16 = Uint16Array, i32 = Int32Array;
+var fleb = new u8([
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1,
+  1,
+  1,
+  1,
+  2,
+  2,
+  2,
+  2,
+  3,
+  3,
+  3,
+  3,
+  4,
+  4,
+  4,
+  4,
+  5,
+  5,
+  5,
+  5,
+  0,
+  /* unused */
+  0,
+  0,
+  /* impossible */
+  0
+]);
+var fdeb = new u8([
+  0,
+  0,
+  0,
+  0,
+  1,
+  1,
+  2,
+  2,
+  3,
+  3,
+  4,
+  4,
+  5,
+  5,
+  6,
+  6,
+  7,
+  7,
+  8,
+  8,
+  9,
+  9,
+  10,
+  10,
+  11,
+  11,
+  12,
+  12,
+  13,
+  13,
+  /* unused */
+  0,
+  0
+]);
+var clim = new u8([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
+var freb = function(eb, start) {
+  var b = new u16(31);
+  for (var i = 0; i < 31; ++i) {
+    b[i] = start += 1 << eb[i - 1];
+  }
+  var r = new i32(b[30]);
+  for (var i = 1; i < 30; ++i) {
+    for (var j = b[i]; j < b[i + 1]; ++j) {
+      r[j] = j - b[i] << 5 | i;
+    }
+  }
+  return { b, r };
+};
+var _a = freb(fleb, 2), fl = _a.b, revfl = _a.r;
+fl[28] = 258, revfl[258] = 28;
+var _b = freb(fdeb, 0), fd = _b.b;
+var rev = new u16(32768);
+for (var i = 0; i < 32768; ++i) {
+  var x = (i & 43690) >> 1 | (i & 21845) << 1;
+  x = (x & 52428) >> 2 | (x & 13107) << 2;
+  x = (x & 61680) >> 4 | (x & 3855) << 4;
+  rev[i] = ((x & 65280) >> 8 | (x & 255) << 8) >> 1;
+}
+var hMap = function(cd, mb, r) {
+  var s = cd.length;
+  var i = 0;
+  var l = new u16(mb);
+  for (; i < s; ++i) {
+    if (cd[i])
+      ++l[cd[i] - 1];
+  }
+  var le = new u16(mb);
+  for (i = 1; i < mb; ++i) {
+    le[i] = le[i - 1] + l[i - 1] << 1;
+  }
+  var co;
+  if (r) {
+    co = new u16(1 << mb);
+    var rvb = 15 - mb;
+    for (i = 0; i < s; ++i) {
+      if (cd[i]) {
+        var sv = i << 4 | cd[i];
+        var r_1 = mb - cd[i];
+        var v = le[cd[i] - 1]++ << r_1;
+        for (var m = v | (1 << r_1) - 1; v <= m; ++v) {
+          co[rev[v] >> rvb] = sv;
+        }
+      }
+    }
+  } else {
+    co = new u16(s);
+    for (i = 0; i < s; ++i) {
+      if (cd[i]) {
+        co[i] = rev[le[cd[i] - 1]++] >> 15 - cd[i];
+      }
+    }
+  }
+  return co;
+};
+var flt = new u8(288);
+for (var i = 0; i < 144; ++i)
+  flt[i] = 8;
+for (var i = 144; i < 256; ++i)
+  flt[i] = 9;
+for (var i = 256; i < 280; ++i)
+  flt[i] = 7;
+for (var i = 280; i < 288; ++i)
+  flt[i] = 8;
+var fdt = new u8(32);
+for (var i = 0; i < 32; ++i)
+  fdt[i] = 5;
+var flrm = /* @__PURE__ */ hMap(flt, 9, 1);
+var fdrm = /* @__PURE__ */ hMap(fdt, 5, 1);
+var max = function(a) {
+  var m = a[0];
+  for (var i = 1; i < a.length; ++i) {
+    if (a[i] > m)
+      m = a[i];
+  }
+  return m;
+};
+var bits = function(d, p, m) {
+  var o = p / 8 | 0;
+  return (d[o] | d[o + 1] << 8) >> (p & 7) & m;
+};
+var bits16 = function(d, p) {
+  var o = p / 8 | 0;
+  return (d[o] | d[o + 1] << 8 | d[o + 2] << 16) >> (p & 7);
+};
+var shft = function(p) {
+  return (p + 7) / 8 | 0;
+};
+var slc = function(v, s, e) {
+  if (s == null || s < 0)
+    s = 0;
+  if (e == null || e > v.length)
+    e = v.length;
+  return new u8(v.subarray(s, e));
+};
+var ec = [
+  "unexpected EOF",
+  "invalid block type",
+  "invalid length/literal",
+  "invalid distance",
+  "stream finished",
+  "no stream handler",
+  ,
+  // determined by compression function
+  "no callback",
+  "invalid UTF-8 data",
+  "extra field too long",
+  "date not in range 1980-2099",
+  "filename too long",
+  "stream finishing",
+  "invalid zip data"
+  // determined by unknown compression method
+];
+var err = function(ind, msg, nt) {
+  var e = new Error(msg || ec[ind]);
+  e.code = ind;
+  if (Error.captureStackTrace)
+    Error.captureStackTrace(e, err);
+  if (!nt)
+    throw e;
+  return e;
+};
+var inflt = function(dat, st, buf, dict) {
+  var sl = dat.length, dl = dict ? dict.length : 0;
+  if (!sl || st.f && !st.l)
+    return buf || new u8(0);
+  var noBuf = !buf;
+  var resize = noBuf || st.i != 2;
+  var noSt = st.i;
+  if (noBuf)
+    buf = new u8(sl * 3);
+  var cbuf = function(l2) {
+    var bl = buf.length;
+    if (l2 > bl) {
+      var nbuf = new u8(Math.max(bl * 2, l2));
+      nbuf.set(buf);
+      buf = nbuf;
+    }
+  };
+  var final = st.f || 0, pos = st.p || 0, bt = st.b || 0, lm = st.l, dm = st.d, lbt = st.m, dbt = st.n;
+  var tbts = sl * 8;
+  do {
+    if (!lm) {
+      final = bits(dat, pos, 1);
+      var type = bits(dat, pos + 1, 3);
+      pos += 3;
+      if (!type) {
+        var s = shft(pos) + 4, l = dat[s - 4] | dat[s - 3] << 8, t = s + l;
+        if (t > sl) {
+          if (noSt)
+            err(0);
+          break;
+        }
+        if (resize)
+          cbuf(bt + l);
+        buf.set(dat.subarray(s, t), bt);
+        st.b = bt += l, st.p = pos = t * 8, st.f = final;
+        continue;
+      } else if (type == 1)
+        lm = flrm, dm = fdrm, lbt = 9, dbt = 5;
+      else if (type == 2) {
+        var hLit = bits(dat, pos, 31) + 257, hcLen = bits(dat, pos + 10, 15) + 4;
+        var tl = hLit + bits(dat, pos + 5, 31) + 1;
+        pos += 14;
+        var ldt = new u8(tl);
+        var clt = new u8(19);
+        for (var i = 0; i < hcLen; ++i) {
+          clt[clim[i]] = bits(dat, pos + i * 3, 7);
+        }
+        pos += hcLen * 3;
+        var clb = max(clt), clbmsk = (1 << clb) - 1;
+        var clm = hMap(clt, clb, 1);
+        for (var i = 0; i < tl; ) {
+          var r = clm[bits(dat, pos, clbmsk)];
+          pos += r & 15;
+          var s = r >> 4;
+          if (s < 16) {
+            ldt[i++] = s;
+          } else {
+            var c = 0, n = 0;
+            if (s == 16)
+              n = 3 + bits(dat, pos, 3), pos += 2, c = ldt[i - 1];
+            else if (s == 17)
+              n = 3 + bits(dat, pos, 7), pos += 3;
+            else if (s == 18)
+              n = 11 + bits(dat, pos, 127), pos += 7;
+            while (n--)
+              ldt[i++] = c;
+          }
+        }
+        var lt = ldt.subarray(0, hLit), dt = ldt.subarray(hLit);
+        lbt = max(lt);
+        dbt = max(dt);
+        lm = hMap(lt, lbt, 1);
+        dm = hMap(dt, dbt, 1);
+      } else
+        err(1);
+      if (pos > tbts) {
+        if (noSt)
+          err(0);
+        break;
+      }
+    }
+    if (resize)
+      cbuf(bt + 131072);
+    var lms = (1 << lbt) - 1, dms = (1 << dbt) - 1;
+    var lpos = pos;
+    for (; ; lpos = pos) {
+      var c = lm[bits16(dat, pos) & lms], sym = c >> 4;
+      pos += c & 15;
+      if (pos > tbts) {
+        if (noSt)
+          err(0);
+        break;
+      }
+      if (!c)
+        err(2);
+      if (sym < 256)
+        buf[bt++] = sym;
+      else if (sym == 256) {
+        lpos = pos, lm = null;
+        break;
+      } else {
+        var add = sym - 254;
+        if (sym > 264) {
+          var i = sym - 257, b = fleb[i];
+          add = bits(dat, pos, (1 << b) - 1) + fl[i];
+          pos += b;
+        }
+        var d = dm[bits16(dat, pos) & dms], dsym = d >> 4;
+        if (!d)
+          err(3);
+        pos += d & 15;
+        var dt = fd[dsym];
+        if (dsym > 3) {
+          var b = fdeb[dsym];
+          dt += bits16(dat, pos) & (1 << b) - 1, pos += b;
+        }
+        if (pos > tbts) {
+          if (noSt)
+            err(0);
+          break;
+        }
+        if (resize)
+          cbuf(bt + 131072);
+        var end = bt + add;
+        if (bt < dt) {
+          var shift = dl - dt, dend = Math.min(dt, end);
+          if (shift + bt < 0)
+            err(3);
+          for (; bt < dend; ++bt)
+            buf[bt] = dict[shift + bt];
+        }
+        for (; bt < end; ++bt)
+          buf[bt] = buf[bt - dt];
+      }
+    }
+    st.l = lm, st.p = lpos, st.b = bt, st.f = final;
+    if (lm)
+      final = 1, st.m = lbt, st.d = dm, st.n = dbt;
+  } while (!final);
+  return bt != buf.length && noBuf ? slc(buf, 0, bt) : buf.subarray(0, bt);
+};
+var et = /* @__PURE__ */ new u8(0);
+var b2 = function(d, b) {
+  return d[b] | d[b + 1] << 8;
+};
+var b4 = function(d, b) {
+  return (d[b] | d[b + 1] << 8 | d[b + 2] << 16 | d[b + 3] << 24) >>> 0;
+};
+var b8 = function(d, b) {
+  return b4(d, b) + b4(d, b + 4) * 4294967296;
+};
+function inflateSync(data, opts) {
+  return inflt(data, { i: 2 }, opts && opts.out, opts && opts.dictionary);
+}
+var td = typeof TextDecoder != "undefined" && /* @__PURE__ */ new TextDecoder();
+var tds = 0;
+try {
+  td.decode(et, { stream: true });
+  tds = 1;
+} catch (e) {
+}
+var dutf8 = function(d) {
+  for (var r = "", i = 0; ; ) {
+    var c = d[i++];
+    var eb = (c > 127) + (c > 223) + (c > 239);
+    if (i + eb > d.length)
+      return { s: r, r: slc(d, i - 1) };
+    if (!eb)
+      r += String.fromCharCode(c);
+    else if (eb == 3) {
+      c = ((c & 15) << 18 | (d[i++] & 63) << 12 | (d[i++] & 63) << 6 | d[i++] & 63) - 65536, r += String.fromCharCode(55296 | c >> 10, 56320 | c & 1023);
+    } else if (eb & 1)
+      r += String.fromCharCode((c & 31) << 6 | d[i++] & 63);
+    else
+      r += String.fromCharCode((c & 15) << 12 | (d[i++] & 63) << 6 | d[i++] & 63);
+  }
+};
+function strFromU8(dat, latin1) {
+  if (latin1) {
+    var r = "";
+    for (var i = 0; i < dat.length; i += 16384)
+      r += String.fromCharCode.apply(null, dat.subarray(i, i + 16384));
+    return r;
+  } else if (td) {
+    return td.decode(dat);
+  } else {
+    var _a2 = dutf8(dat), s = _a2.s, r = _a2.r;
+    if (r.length)
+      err(8);
+    return s;
+  }
+}
+var slzh = function(d, b) {
+  return b + 30 + b2(d, b + 26) + b2(d, b + 28);
+};
+var zh = function(d, b, z) {
+  var fnl = b2(d, b + 28), efl = b2(d, b + 30), fn = strFromU8(d.subarray(b + 46, b + 46 + fnl), !(b2(d, b + 8) & 2048)), es = b + 46 + fnl;
+  var _a2 = z64hs(d, es, efl, z, b4(d, b + 20), b4(d, b + 24), b4(d, b + 42)), sc = _a2[0], su = _a2[1], off = _a2[2];
+  return [b2(d, b + 10), sc, su, fn, es + efl + b2(d, b + 32), off];
+};
+var z64hs = function(d, b, l, z, sc, su, off) {
+  var nsc = sc == 4294967295, nsu = su == 4294967295, noff = off == 4294967295, e = b + l;
+  var nf = nsc + nsu + noff;
+  if (z && nf) {
+    for (; b + 4 < e; b += 4 + b2(d, b + 2)) {
+      if (b2(d, b) == 1) {
+        return [
+          nsc ? b8(d, b + 4 + 8 * nsu) : sc,
+          nsu ? b8(d, b + 4) : su,
+          noff ? b8(d, b + 4 + 8 * (nsu + nsc)) : off,
+          1
+        ];
+      }
+    }
+    if (z < 2)
+      err(13);
+  }
+  return [sc, su, off, 0];
+};
+function unzipSync(data, opts) {
+  var files = {};
+  var e = data.length - 22;
+  for (; b4(data, e) != 101010256; --e) {
+    if (!e || data.length - e > 65558)
+      err(13);
+  }
+  var c = b2(data, e + 8);
+  if (!c)
+    return {};
+  var o = b4(data, e + 16);
+  var z = b4(data, e - 20) == 117853008;
+  if (z) {
+    var ze = b4(data, e - 12);
+    z = b4(data, ze) == 101075792;
+    if (z) {
+      c = b4(data, ze + 32);
+      o = b4(data, ze + 48);
+    }
+  }
+  var fltr = opts && opts.filter;
+  for (var i = 0; i < c; ++i) {
+    var _a2 = zh(data, o, z), c_2 = _a2[0], sc = _a2[1], su = _a2[2], fn = _a2[3], no = _a2[4], off = _a2[5], b = slzh(data, off);
+    o = no;
+    if (!fltr || fltr({
+      name: fn,
+      size: sc,
+      originalSize: su,
+      compression: c_2
+    })) {
+      if (!c_2)
+        files[fn] = slc(data, b, b + sc);
+      else if (c_2 == 8)
+        files[fn] = inflateSync(data.subarray(b, b + sc), { out: new u8(su) });
+      else
+        err(14, "unknown compression type " + c_2);
+    }
+  }
+  return files;
+}
 class SoundManager {
   constructor() {
     this.sounds = {};
@@ -46,7 +504,7 @@ class SoundManager {
       explosion: 0.6,
       enemyPass: 0.4
     };
-    this.overlapSounds = ["laser", "enemyLaser", "explosion"];
+    this.overlapSounds = ["laser", "enemyLaser", "explosion", "enemyPass"];
     this._loadInitialSounds();
   }
   _loadInitialSounds() {
@@ -54,7 +512,6 @@ class SoundManager {
     this._createAudio("nave", "/assets/sounds/nave.mp3");
   }
   init() {
-    console.log("🔊 SoundManager: Iniciando carregamento de áudios restantes...");
     this._createAudio("explosion", "/assets/sounds/explosao_inimiga.mp3");
     this._createAudio("enemyPass", "/assets/sounds/inimiga_passando.mp3");
     this._createAudio("enemyLaser", "/assets/sounds/laser_inimigo.mp3");
@@ -63,49 +520,28 @@ class SoundManager {
     const audio = new Audio(path);
     audio.volume = this.volumes[name] || 0.5;
     audio.preload = "auto";
-    audio.onerror = () => console.error(`❌ Erro: Som não encontrado em ${path}`);
+    audio.onerror = () => console.error("Erro ao carregar:", path);
     audio.load();
     this.sounds[name] = audio;
   }
   play(name) {
     const sound = this.sounds[name];
-    if (!sound) {
-      console.warn(`Som "${name}" não carregado.`);
-      return;
-    }
+    if (!sound) return;
     if (name === "nave") {
       if (sound.paused) {
         sound.loop = true;
-        sound.play().catch((e) => console.log("Bloqueio de áudio:", e));
+        sound.play().catch((e) => console.warn("Erro nave:", e));
       }
-      return;
-    }
-    if (this.overlapSounds.includes(name)) {
-      if (!sound.paused) {
-        const clone = sound.cloneNode();
-        clone.volume = sound.volume;
-        clone.play().catch(() => {
-        });
-        clone.onended = () => clone.remove();
-      } else {
-        sound.currentTime = 0;
-        sound.play().catch(() => {
-        });
-      }
+    } else if (this.overlapSounds.includes(name)) {
+      const clone = sound.cloneNode(true);
+      clone.volume = sound.volume;
+      clone.play().catch(() => {
+      });
     } else {
       sound.currentTime = 0;
       sound.play().catch(() => {
       });
     }
-  }
-  stop(name) {
-    if (this.sounds[name]) {
-      this.sounds[name].pause();
-      this.sounds[name].currentTime = 0;
-    }
-  }
-  stopAll() {
-    Object.keys(this.sounds).forEach((name) => this.stop(name));
   }
 }
 class InputManager {
@@ -1282,8 +1718,8 @@ class GLTFCubicSplineInterpolant extends Interpolant {
     const stride = this.valueSize;
     const stride2 = stride * 2;
     const stride3 = stride * 3;
-    const td = t1 - t0;
-    const p = (t - t0) / td;
+    const td2 = t1 - t0;
+    const p = (t - t0) / td2;
     const pp = p * p;
     const ppp = pp * p;
     const offset1 = i1 * stride3;
@@ -1294,9 +1730,9 @@ class GLTFCubicSplineInterpolant extends Interpolant {
     const s1 = s3 - pp + p;
     for (let i = 0; i !== stride; i++) {
       const p0 = values[offset0 + i + stride];
-      const m0 = values[offset0 + i + stride2] * td;
+      const m0 = values[offset0 + i + stride2] * td2;
       const p1 = values[offset1 + i + stride];
-      const m1 = values[offset1 + i] * td;
+      const m1 = values[offset1 + i] * td2;
       result[i] = s0 * p0 + s1 * m0 + s2 * p1 + s3 * m1;
     }
     return result;
@@ -2640,11 +3076,11 @@ function computeBounds(geometry, primitiveDef, parser) {
   if (attributes.POSITION !== void 0) {
     const accessor = parser.json.accessors[attributes.POSITION];
     const min = accessor.min;
-    const max = accessor.max;
-    if (min !== void 0 && max !== void 0) {
+    const max2 = accessor.max;
+    if (min !== void 0 && max2 !== void 0) {
       box.set(
         new Vector3(min[0], min[1], min[2]),
-        new Vector3(max[0], max[1], max[2])
+        new Vector3(max2[0], max2[1], max2[2])
       );
       if (accessor.normalized) {
         const boxScale = getNormalizedComponentScale(WEBGL_COMPONENT_TYPES[accessor.componentType]);
@@ -2667,11 +3103,11 @@ function computeBounds(geometry, primitiveDef, parser) {
       if (target.POSITION !== void 0) {
         const accessor = parser.json.accessors[target.POSITION];
         const min = accessor.min;
-        const max = accessor.max;
-        if (min !== void 0 && max !== void 0) {
-          vector.setX(Math.max(Math.abs(min[0]), Math.abs(max[0])));
-          vector.setY(Math.max(Math.abs(min[1]), Math.abs(max[1])));
-          vector.setZ(Math.max(Math.abs(min[2]), Math.abs(max[2])));
+        const max2 = accessor.max;
+        if (min !== void 0 && max2 !== void 0) {
+          vector.setX(Math.max(Math.abs(min[0]), Math.abs(max2[0])));
+          vector.setY(Math.max(Math.abs(min[1]), Math.abs(max2[1])));
+          vector.setZ(Math.max(Math.abs(min[2]), Math.abs(max2[2])));
           if (accessor.normalized) {
             const boxScale = getNormalizedComponentScale(WEBGL_COMPONENT_TYPES[accessor.componentType]);
             vector.multiplyScalar(boxScale);
@@ -2934,7 +3370,7 @@ class EnemyManager {
           c.material.precision = "mediump";
         }
       });
-    }, void 0, (err) => console.error("Erro ao carregar inimigo:", err));
+    }, void 0, (err2) => console.error("Erro ao carregar inimigo:", err2));
   }
   _enemyShoot(enemy, soundManager2) {
     const laser = new Mesh(ENEMY_LASER_GEO, ENEMY_LASER_MAT);
@@ -3104,34 +3540,28 @@ class ExplosionManager {
     const fragments = [];
     const addFragment = (geometry, material, count, isSmoke) => {
       for (let i = 0; i < count; i++) {
-        const instanceMat = material.clone();
-        const mesh = new Mesh(geometry, instanceMat);
-        const s = isSmoke ? 1 + Math.random() * 2 : 0.3 + Math.random() * 0.7;
+        const mesh = new Mesh(geometry, material);
+        const s = isSmoke ? 2 + Math.random() * 2 : 0.5 + Math.random() * 1.5;
         mesh.scale.set(s, s, s);
         group.add(mesh);
         fragments.push({
           mesh,
           isSmoke,
           velocity: new Vector3(
-            (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5),
-            (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5),
-            (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5)
+            (Math.random() - 0.5) * 5,
+            // Velocidade maior
+            (Math.random() - 0.5) * 5,
+            (Math.random() - 0.5) * 5
           ),
           initialScale: s
         });
       }
     };
-    addFragment(GEO.debris, BASE_MATS.debris, 12, false);
-    addFragment(GEO.smoke, BASE_MATS.smoke, 6, true);
-    const mainLight = new PointLight(16755200, 100, 40);
+    addFragment(GEO.debris, BASE_MATS.debris, 15, false);
+    addFragment(GEO.smoke, BASE_MATS.smoke, 10, true);
+    const mainLight = new PointLight(16737792, 300, 50);
     group.add(mainLight);
-    this.explosions.push({
-      group,
-      mainLight,
-      fragments,
-      life: 1,
-      decay: 0.028
-    });
+    this.explosions.push({ group, mainLight, fragments, life: 1, decay: 0.05 });
   }
   update() {
     for (let i = this.explosions.length - 1; i >= 0; i--) {
@@ -3139,19 +3569,20 @@ class ExplosionManager {
       exp.life -= exp.decay;
       exp.mainLight.intensity = exp.life * 100;
       for (let frag of exp.fragments) {
-        frag.velocity.multiplyScalar(0.95);
+        frag.velocity.multiplyScalar(0.92);
         frag.mesh.position.add(frag.velocity);
         if (frag.isSmoke) {
-          frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 2));
-          frag.mesh.material.opacity = exp.life * 0.35;
+          frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 4));
+          frag.mesh.material.opacity = exp.life * 0.4;
         } else {
-          frag.mesh.rotation.x += 0.12;
-          frag.mesh.rotation.z += 0.08;
-          frag.mesh.material.opacity = exp.life * 0.9;
+          frag.mesh.rotation.x += 0.25;
+          frag.mesh.rotation.y += 0.25;
+          frag.mesh.rotation.z += 0.25;
+          frag.mesh.material.opacity = exp.life;
           frag.mesh.material.color.setRGB(
+            exp.life * 1.5,
             exp.life * 0.8,
-            exp.life * 0.4,
-            0
+            exp.life * 0.2
           );
         }
       }
@@ -3187,6 +3618,7 @@ class SpaceEnvironment {
   update(deltaTime) {
   }
 }
+window.fflate = { unzipSync, strFromU8 };
 let audioInitialized = false;
 let currentState = "menu";
 let score = 0;
@@ -3194,13 +3626,11 @@ const GAME_STATE = { PLAYING: "playing" };
 const scene = new Scene();
 scene.background = new Color(65795);
 const camera = new PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1500);
-camera.position.set(0, 8, 60);
-const renderer = new WebGLRenderer({
-  antialias: true,
-  powerPreference: "high-performance"
-});
+camera.position.set(0, 5, 55);
+const listener = new AudioListener();
+camera.add(listener);
+const renderer = new WebGLRenderer({ antialias: false, powerPreference: "high-performance", precision: "mediump" });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 document.body.appendChild(renderer.domElement);
 const soundManager = new SoundManager();
 const laserManager = new LaserManager(scene);
@@ -3209,7 +3639,7 @@ const inputManager = new InputManager();
 const enemyManager = new EnemyManager(scene, camera);
 const starfieldManager = new StarfieldManager(scene);
 const explosionManager = new ExplosionManager(scene);
-const spaceEnvironment = new SpaceEnvironment(scene);
+new SpaceEnvironment(scene);
 function updateHUD() {
   const scoreVal = document.getElementById("score-val");
   if (scoreVal) scoreVal.textContent = score.toString().padStart(7, "0");
@@ -3230,22 +3660,21 @@ function startGame() {
   updateHUD();
 }
 let lastTime = 0;
-function animate(now = 0) {
-  var _a;
+function animate(now) {
   requestAnimationFrame(animate);
   const deltaTime = Math.min((now - lastTime) / 1e3, 0.1);
   lastTime = now;
   if (currentState === GAME_STATE.PLAYING) {
     const input = inputManager.update();
     if (inputManager.keys.Space) {
-      if (!player.lastFireTime || now - player.lastFireTime > 220) {
-        laserManager.fire(player.mesh.position, camera);
+      if (!player.lastFireTime || now - player.lastFireTime > 250) {
+        laserManager.fire(player.mesh, player.mesh);
         soundManager.play("laser");
         player.lastFireTime = now;
       }
     }
     player.update(input, deltaTime);
-    laserManager.update(deltaTime);
+    laserManager.update(player.mesh, deltaTime);
     enemyManager.update(
       laserManager,
       (pts) => {
@@ -3257,24 +3686,19 @@ function animate(now = 0) {
       explosionManager,
       soundManager
     );
-    explosionManager.update();
+    explosionManager.update(deltaTime);
     starfieldManager.update(deltaTime);
-    (_a = spaceEnvironment.update) == null ? void 0 : _a.call(spaceEnvironment, deltaTime);
     renderer.render(scene, camera);
   }
 }
 window.addEventListener("DOMContentLoaded", () => {
-  const startBtn = document.getElementById("start-btn");
-  if (startBtn) {
-    startBtn.addEventListener("click", () => {
-      if (!audioInitialized) {
-        soundManager.init();
-        audioInitialized = true;
-      }
-      startGame();
-    });
-  }
-  initGame().then(() => {
-    animate(0);
+  var _a2;
+  (_a2 = document.getElementById("start-btn")) == null ? void 0 : _a2.addEventListener("click", () => {
+    if (!audioInitialized) {
+      soundManager.init();
+      audioInitialized = true;
+    }
+    startGame();
   });
+  initGame().then(() => animate(0));
 });

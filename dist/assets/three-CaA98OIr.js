@@ -21617,6 +21617,132 @@ class ImageBitmapLoader extends Loader {
     scope.manager.itemStart(url);
   }
 }
+let _context;
+class AudioContext {
+  static getContext() {
+    if (_context === void 0) {
+      _context = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return _context;
+  }
+  static setContext(value) {
+    _context = value;
+  }
+}
+class Clock {
+  constructor(autoStart = true) {
+    this.autoStart = autoStart;
+    this.startTime = 0;
+    this.oldTime = 0;
+    this.elapsedTime = 0;
+    this.running = false;
+  }
+  start() {
+    this.startTime = now();
+    this.oldTime = this.startTime;
+    this.elapsedTime = 0;
+    this.running = true;
+  }
+  stop() {
+    this.getElapsedTime();
+    this.running = false;
+    this.autoStart = false;
+  }
+  getElapsedTime() {
+    this.getDelta();
+    return this.elapsedTime;
+  }
+  getDelta() {
+    let diff = 0;
+    if (this.autoStart && !this.running) {
+      this.start();
+      return 0;
+    }
+    if (this.running) {
+      const newTime = now();
+      diff = (newTime - this.oldTime) / 1e3;
+      this.oldTime = newTime;
+      this.elapsedTime += diff;
+    }
+    return diff;
+  }
+}
+function now() {
+  return (typeof performance === "undefined" ? Date : performance).now();
+}
+const _position$1 = /* @__PURE__ */ new Vector3();
+const _quaternion$1 = /* @__PURE__ */ new Quaternion();
+const _scale$1 = /* @__PURE__ */ new Vector3();
+const _orientation$1 = /* @__PURE__ */ new Vector3();
+class AudioListener extends Object3D {
+  constructor() {
+    super();
+    this.type = "AudioListener";
+    this.context = AudioContext.getContext();
+    this.gain = this.context.createGain();
+    this.gain.connect(this.context.destination);
+    this.filter = null;
+    this.timeDelta = 0;
+    this._clock = new Clock();
+  }
+  getInput() {
+    return this.gain;
+  }
+  removeFilter() {
+    if (this.filter !== null) {
+      this.gain.disconnect(this.filter);
+      this.filter.disconnect(this.context.destination);
+      this.gain.connect(this.context.destination);
+      this.filter = null;
+    }
+    return this;
+  }
+  getFilter() {
+    return this.filter;
+  }
+  setFilter(value) {
+    if (this.filter !== null) {
+      this.gain.disconnect(this.filter);
+      this.filter.disconnect(this.context.destination);
+    } else {
+      this.gain.disconnect(this.context.destination);
+    }
+    this.filter = value;
+    this.gain.connect(this.filter);
+    this.filter.connect(this.context.destination);
+    return this;
+  }
+  getMasterVolume() {
+    return this.gain.gain.value;
+  }
+  setMasterVolume(value) {
+    this.gain.gain.setTargetAtTime(value, this.context.currentTime, 0.01);
+    return this;
+  }
+  updateMatrixWorld(force) {
+    super.updateMatrixWorld(force);
+    const listener = this.context.listener;
+    const up = this.up;
+    this.timeDelta = this._clock.getDelta();
+    this.matrixWorld.decompose(_position$1, _quaternion$1, _scale$1);
+    _orientation$1.set(0, 0, -1).applyQuaternion(_quaternion$1);
+    if (listener.positionX) {
+      const endTime = this.context.currentTime + this.timeDelta;
+      listener.positionX.linearRampToValueAtTime(_position$1.x, endTime);
+      listener.positionY.linearRampToValueAtTime(_position$1.y, endTime);
+      listener.positionZ.linearRampToValueAtTime(_position$1.z, endTime);
+      listener.forwardX.linearRampToValueAtTime(_orientation$1.x, endTime);
+      listener.forwardY.linearRampToValueAtTime(_orientation$1.y, endTime);
+      listener.forwardZ.linearRampToValueAtTime(_orientation$1.z, endTime);
+      listener.upX.linearRampToValueAtTime(up.x, endTime);
+      listener.upY.linearRampToValueAtTime(up.y, endTime);
+      listener.upZ.linearRampToValueAtTime(up.z, endTime);
+    } else {
+      listener.setPosition(_position$1.x, _position$1.y, _position$1.z);
+      listener.setOrientation(_orientation$1.x, _orientation$1.y, _orientation$1.z, up.x, up.y, up.z);
+    }
+  }
+}
 const _RESERVED_CHARS_RE = "\\[\\]\\.:\\/";
 const _reservedRe = new RegExp("[" + _RESERVED_CHARS_RE + "]", "g");
 const _wordChar = "[^" + _RESERVED_CHARS_RE + "]";
@@ -22007,81 +22133,82 @@ if (typeof window !== "undefined") {
   }
 }
 export {
-  PointLight as $,
+  PerspectiveCamera as $,
   AdditiveBlending as A,
   Bone as B,
   ClampToEdgeWrapping as C,
   DirectionalLight as D,
-  LinearSRGBColorSpace as E,
+  LinearMipmapNearestFilter as E,
   FileLoader as F,
   Group as G,
-  Loader as H,
+  LinearSRGBColorSpace as H,
   ImageBitmapLoader as I,
-  LoaderUtils as J,
-  MathUtils as K,
+  Loader as J,
+  LoaderUtils as K,
   Line as L,
   Material as M,
-  Matrix4 as N,
-  Mesh as O,
-  MeshBasicMaterial as P,
-  MeshLambertMaterial as Q,
-  MeshPhysicalMaterial as R,
-  MeshStandardMaterial as S,
-  MirroredRepeatWrapping as T,
-  NearestFilter as U,
-  NearestMipmapLinearFilter as V,
-  NearestMipmapNearestFilter as W,
-  NumberKeyframeTrack as X,
-  Object3D as Y,
-  OrthographicCamera as Z,
-  PerspectiveCamera as _,
+  MathUtils as N,
+  Matrix4 as O,
+  Mesh as P,
+  MeshBasicMaterial as Q,
+  MeshLambertMaterial as R,
+  MeshPhysicalMaterial as S,
+  MeshStandardMaterial as T,
+  MirroredRepeatWrapping as U,
+  NearestFilter as V,
+  NearestMipmapLinearFilter as W,
+  NearestMipmapNearestFilter as X,
+  NumberKeyframeTrack as Y,
+  Object3D as Z,
+  OrthographicCamera as _,
   AmbientLight as a,
-  Points as a0,
-  PointsMaterial as a1,
-  PropertyBinding as a2,
-  Quaternion as a3,
-  QuaternionKeyframeTrack as a4,
-  RepeatWrapping as a5,
-  RingGeometry as a6,
-  SRGBColorSpace as a7,
-  Scene as a8,
-  Skeleton as a9,
-  SkinnedMesh as aa,
-  Sphere as ab,
-  SphereGeometry as ac,
-  SpotLight as ad,
-  Texture as ae,
-  TextureLoader as af,
-  TriangleFanDrawMode as ag,
-  TriangleStripDrawMode as ah,
-  TrianglesDrawMode as ai,
-  Vector2 as aj,
-  Vector3 as ak,
-  VectorKeyframeTrack as al,
-  WebGLRenderer as am,
+  PointLight as a0,
+  Points as a1,
+  PointsMaterial as a2,
+  PropertyBinding as a3,
+  Quaternion as a4,
+  QuaternionKeyframeTrack as a5,
+  RepeatWrapping as a6,
+  RingGeometry as a7,
+  SRGBColorSpace as a8,
+  Scene as a9,
+  Skeleton as aa,
+  SkinnedMesh as ab,
+  Sphere as ac,
+  SphereGeometry as ad,
+  SpotLight as ae,
+  Texture as af,
+  TextureLoader as ag,
+  TriangleFanDrawMode as ah,
+  TriangleStripDrawMode as ai,
+  TrianglesDrawMode as aj,
+  Vector2 as ak,
+  Vector3 as al,
+  VectorKeyframeTrack as am,
+  WebGLRenderer as an,
   AnimationClip as b,
-  Box3 as c,
-  BufferAttribute as d,
-  BufferGeometry as e,
-  Color as f,
-  ColorManagement as g,
-  ConeGeometry as h,
-  CylinderGeometry as i,
-  DodecahedronGeometry as j,
-  DoubleSide as k,
-  FogExp2 as l,
-  FrontSide as m,
-  InstancedBufferAttribute as n,
-  InstancedMesh as o,
-  InterleavedBuffer as p,
-  InterleavedBufferAttribute as q,
-  Interpolant as r,
-  InterpolateDiscrete as s,
-  InterpolateLinear as t,
-  LineBasicMaterial as u,
-  LineLoop as v,
-  LineSegments as w,
-  LinearFilter as x,
-  LinearMipmapLinearFilter as y,
-  LinearMipmapNearestFilter as z
+  AudioListener as c,
+  Box3 as d,
+  BufferAttribute as e,
+  BufferGeometry as f,
+  Color as g,
+  ColorManagement as h,
+  ConeGeometry as i,
+  CylinderGeometry as j,
+  DodecahedronGeometry as k,
+  DoubleSide as l,
+  FogExp2 as m,
+  FrontSide as n,
+  InstancedBufferAttribute as o,
+  InstancedMesh as p,
+  InterleavedBuffer as q,
+  InterleavedBufferAttribute as r,
+  Interpolant as s,
+  InterpolateDiscrete as t,
+  InterpolateLinear as u,
+  LineBasicMaterial as v,
+  LineLoop as w,
+  LineSegments as x,
+  LinearFilter as y,
+  LinearMipmapLinearFilter as z
 };
