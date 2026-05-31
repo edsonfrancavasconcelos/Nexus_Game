@@ -1,0 +1,176 @@
+/* ==================== CONFIGURAÇÃO GLOBAL ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent; /* Remove o brilho de toque no mobile */
+}
+
+body {
+    overflow: hidden;
+    background-color: #020208;
+    width: 100vw;
+    height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    touch-action: none; /* Impede zoom e scroll nativo */
+}
+
+canvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* ==================== INTERFACE DO JOGO ==================== */
+#ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 10;
+    text-shadow: 0 0 8px #00ffff;
+    pointer-events: none; /* Importante: o clique passa pelo texto */
+}
+
+/* ==================== TELA DE INÍCIO ==================== */
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(5, 5, 15, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100; /* Garante que o menu fique sobre tudo */
+}
+
+#overlay h1 {
+    color: #ffffff;
+    font-size: 52px;
+    margin-bottom: 30px;
+    letter-spacing: 6px;
+    text-shadow: 0 0 15px #ff0033;
+}
+
+#overlay button {
+    padding: 16px 40px;
+    font-size: 19px;
+    font-weight: bold;
+    color: #00ffff;
+    background: transparent;
+    border: 3px solid #00ffff;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+    transition: all 0.3s ease;
+}
+
+#overlay button:hover {
+    background: #00ffff;
+    color: #020208;
+    box-shadow: 0 0 30px #00ffff;
+}
+
+/* ==================== CONTROLES MOBILE ==================== */
+#mobile-controls {
+    position: fixed;
+    top: 0; /* Ajustado para cobrir a tela inteira */
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 50; 
+    pointer-events: none; /* A tela toda é transparente ao toque... */
+    display: none; 
+}
+
+/* ...mas reativamos o toque apenas nos elementos filhos */
+#mobile-controls > * {
+    pointer-events: auto; 
+}
+
+#joystick-area {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    width: 130px;
+    height: 130px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 3px solid rgba(0, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: none;
+}
+
+#stick {
+    width: 55px;
+    height: 55px;
+    background: #00ffff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px #00ffff, inset 0 0 10px rgba(255,255,255,0.6);
+    pointer-events: none;
+}
+
+#shootBtn {
+    position: absolute;
+    bottom: 35px;
+    right: 35px;
+    width: 95px;
+    height: 95px;
+    background: radial-gradient(circle at 40% 40%, #ff3366, #cc1122);
+    border: 4px solid #ff3366;
+    border-radius: 50%;
+    color: white;
+    font-size: 22px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 25px #ff3366;
+    touch-action: manipulation;
+    transition: transform 0.1s;
+}
+
+#shootBtn:active { transform: scale(0.85); }
+
+#pauseBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 58px;
+    height: 58px;
+    background: #ef4444;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    color: white;
+    font-size: 26px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: manipulation;
+}
+
+/* ==================== RESPONSIVIDADE ==================== */
+@media (pointer: fine) {
+    #mobile-controls { display: none !important; }
+}
+
+@media (pointer: coarse) {
+    /* Garante que, se for touch, o container pai não bloqueie cliques */
+    #mobile-controls { display: block; }
+}
+
+@media (max-width: 480px) {
+    #shootBtn { width: 85px; height: 85px; bottom: 25px; right: 25px; }
+    #joystick-area { width: 110px; height: 110px; bottom: 30px; left: 30px; }
+}

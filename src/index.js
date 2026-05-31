@@ -103,27 +103,15 @@ function animate(now) {
     }
 }
 
-// --- EXECUÇÃO ---
+// --- INICIALIZAÇÃO ---
 window.addEventListener('DOMContentLoaded', () => {
-    const startBtn = document.getElementById('start-btn');
-    
-    if (startBtn) {
-        startBtn.addEventListener('click', () => {
-            if (!audioInitialized) {
-                soundManager.init();
-                audioInitialized = true;
-            }
-            startGame();
-        });
-    }
+    document.getElementById('start-btn')?.addEventListener('click', () => {
+        if (!audioInitialized) {
+            soundManager.init();
+            audioInitialized = true;
+        }
+        startGame();
+    });
 
-    // Inicializa o ambiente de jogo mas NÃO inicia o loop de jogo (animate) ainda
-    initGame()
-        .then(() => {
-            console.log("Assets carregados, pronto para iniciar.");
-            // Chamamos o animate para o Three.js renderizar o menu (estático)
-            // Se preferir, apenas chame o render uma vez ou inicie o loop aqui
-            animate(0); 
-        })
-        .catch(err => console.error("Erro ao carregar assets:", err));
+    initGame().then(() => animate(0));
 });

@@ -1,11 +1,11 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: './', // Garante caminhos relativos para funcionar no Netlify
+  base: './',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    // Otimização para bibliotecas grandes como o Three.js
+    minify: false, // <-- ADICIONE ISSO
     rollupOptions: {
       output: {
         manualChunks: {
@@ -15,7 +15,5 @@ export default defineConfig({
     }
   },
   publicDir: 'public',
-  server: {
-    port: 3000
-  }
+  server: { port: 3000 }
 });
