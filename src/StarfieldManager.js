@@ -23,7 +23,7 @@ export class StarfieldManager {
                 this.spaceMesh = gltf.scene;
 
                 // Envolve a câmera do jogo
-                this.spaceMesh.scale.set(1, 1, 1); 
+                this.spaceMesh.scale.set(100, 100, 100); 
 this.spaceMesh.position.set(0, 0, 0);
 
 this.spaceMesh.traverse((child) => {
