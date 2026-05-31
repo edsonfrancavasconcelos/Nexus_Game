@@ -1,95 +1,27 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export class SpaceEnvironment {
-
     constructor(scene) {
-
         this.scene = scene;
-
-        this.loadEnvironment();
+        this.initEnvironment();
     }
 
-    loadEnvironment() {
+    initEnvironment() {
+        // 1. ILUMINAÇÃO BÁSICA (Muito leve)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Luz suave em tudo
+        this.scene.add(ambientLight);
 
-        const loader = new GLTFLoader();
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1); // Luz vindo de um lado
+        sunLight.position.set(5, 10, 7);
+        this.scene.add(sunLight);
 
-        loader.load(
+        // 2. COR DE FUNDO (Melhor que carregar um modelo pesado)
+        this.scene.background = new THREE.Color(0x020205);
 
-            'assets/models/spaco.glb',
+        // 3. NEBULOSA SIMPLIFICADA (Opcional - Adiciona profundidade sem pesar)
+        const fog = new THREE.Fog(0x020205, 100, 1000);
+        this.scene.fog = fog;
 
-            (gltf) => {
-
-                const model = gltf.scene;
-
-                // =====================================
-                // ESCALA ULTRA PEQUENA
-                // =====================================
-               model.scale.set(
-                    10,
-                    10,
-                    10
-                );
-                
-
-                // =====================================
-                // CENTRALIZA O MODELO
-                // =====================================
-                const box =
-                    new THREE.Box3().setFromObject(model);
-
-                const center =
-                    box.getCenter(
-                        new THREE.Vector3()
-                    );
-
-                model.position.sub(center);
-
-                // =====================================
-                // POSIÇÃO NO FUNDO
-                // =====================================
-                model.position.set(
-                    0,
-                    -15,
-                    -500
-                );
-
-                // =====================================
-                // MATERIAIS
-                // =====================================
-                model.traverse((child) => {
-
-                    if (child.isMesh) {
-
-                        child.castShadow = false;
-
-                        child.receiveShadow = false;
-
-                        if (child.material) {
-
-                            child.material.metalness = 0.4;
-
-                            child.material.roughness = 0.8;
-                        }
-                    }
-                });
-
-                this.scene.add(model);
-
-                console.log(
-                    'AMBIENTE ESPACIAL OK'
-                );
-            },
-
-            undefined,
-
-            (error) => {
-
-                console.error(
-                    'ERRO SPACE:',
-                    error
-                );
-            }
-        );
+        console.log('AMBIENTE OTIMIZADO: Modelo GLB removido para ganho de FPS.');
     }
 }
