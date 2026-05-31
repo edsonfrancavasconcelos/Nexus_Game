@@ -3,7 +3,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { SoundManager } from './SoundManager.js';
 import { ExplosionManager } from './ExplosionManager.js';
 
-// --- Recursos Estáticos ---
 const ENEMY_LASER_GEO = new THREE.SphereGeometry(1.2, 4, 4);
 const ENEMY_LASER_MAT = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 
@@ -14,14 +13,12 @@ export class EnemyManager {
         this.enemies = [];
         this.enemyProjectiles = []; 
         this.waveTimer = 0;
-
         this.enemySpeed = 160.0;
         this.maxEnemiesOnScreen = 10;
         this.waveCooldown = 2.0; 
         
         this.soundManager = new SoundManager();
         this.explosionManager = new ExplosionManager(scene);
-
         this._loadEnemyModel();
     }
 
@@ -46,35 +43,26 @@ export class EnemyManager {
     _enemyShoot(enemy) {
         const laser = new THREE.Mesh(ENEMY_LASER_GEO, ENEMY_LASER_MAT);
         laser.position.copy(enemy.position);
-        
         const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(enemy.quaternion);
-        
         this.scene.add(laser);
-        this.enemyProjectiles.push({
-            mesh: laser,
-            dir: direction,
-            speed: 450
-        });
-
+        this.enemyProjectiles.push({ mesh: laser, dir: direction, speed: 450 });
         this.soundManager.play('enemyLaser');
     }
 
     spawnWave(player) {
         if (!this.enemyTemplate || this.enemies.length >= this.maxEnemiesOnScreen) return;
-
         const enemy = this.enemyTemplate.clone();
         const pPos = player.mesh.position;
 
         enemy.position.set(
             pPos.x + (Math.random() - 0.5) * 600,
             pPos.y + (Math.random() - 0.5) * 200,
-            pPos.z - 1500 // Spawn um pouco mais longe para dar tempo de reagir
+            pPos.z - 1500 
         );
 
         enemy.userData = {
             speed: this.enemySpeed + Math.random() * 50,
-            shootTimer: 1.0 + Math.random() * 2,
-            hitRadius: 25 // Hitbox maior para facilitar o acerto
+            shootTimer: 1.0 + Math.random() * 2
         };
 
         this.scene.add(enemy);
@@ -91,20 +79,21 @@ export class EnemyManager {
         }
 
         const pPos = player.mesh.position;
-        const playerLasers = laserManager?.lasers || [];
+        
+        // --- CRÍTICO: Garantir que pegamos a lista correta de lasers ---
+        const playerLasers = laserManager.lasers || [];
 
-        // 1. Tiros Inimigos
+        // 1. Movimentação dos tiros inimigos
         for (let i = this.enemyProjectiles.length - 1; i >= 0; i--) {
             const p = this.enemyProjectiles[i];
             p.mesh.position.addScaledVector(p.dir, p.speed * deltaTime);
-
-            if (p.mesh.position.distanceToSquared(pPos) > 4000000) { // 2000^2
+            if (Math.abs(p.mesh.position.z - pPos.z) > 1500) {
                 this.scene.remove(p.mesh);
                 this.enemyProjectiles.splice(i, 1);
             }
         }
 
-        // 2. Loop de Inimigos e Colisões
+        // 2. Loop principal de inimigos
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
             const data = enemy.userData;
@@ -120,39 +109,40 @@ export class EnemyManager {
                 data.shootTimer = 2.0 + Math.random();
             }
 
-            // --- COLISÃO MELHORADA (AABB/Box simplificada) ---
-            let enemyDestroyed = false;
+            // --- DETECÇÃO DE COLISÃO REFORÇADA ---
+            let enemyHit = false;
 
-            // Colisão Inimigo x Player
-            const distSq = enemy.position.distanceToSquared(pPos);
-            if (distSq < 625) { // Aproximadamente 25 unidades de distância
-                this.destroyEnemy(i);
-                continue;
-            }
-
-            // Colisão Inimigo x Lasers do Player
+            // Loop pelos lasers do jogador
             for (let j = playerLasers.length - 1; j >= 0; j--) {
                 const laser = playerLasers[j];
                 
-                // Calculamos a distância absoluta em cada eixo
+                // Usamos distâncias absolutas (AABB simplificado)
+                // Se o laser estiver dentro desse "bloco" ao redor da inimiga, ela explode
                 const dx = Math.abs(enemy.position.x - laser.position.x);
                 const dy = Math.abs(enemy.position.y - laser.position.y);
                 const dz = Math.abs(enemy.position.z - laser.position.z);
 
-                // Se o laser estiver dentro de um "caixote" ao redor da nave
-                // Isso é muito mais fácil de acertar do que uma esfera perfeita
-                if (dx < 25 && dy < 20 && dz < 40) { 
+                // Aumentamos a margem de acerto para 35 no X e 60 no Z
+                // Isso compensa a alta velocidade dos objetos
+                if (dx < 35 && dy < 30 && dz < 60) {
                     if (onScoreIncrease) onScoreIncrease(100);
                     
+                    // Remove o laser da cena e da lista
                     this.scene.remove(laser);
                     playerLasers.splice(j, 1);
                     
-                    enemyDestroyed = true;
+                    enemyHit = true;
                     break; 
                 }
             }
 
-            if (enemyDestroyed) {
+            if (enemyHit) {
+                this.destroyEnemy(i);
+                continue;
+            }
+
+            // Colisão Direta Inimigo x Player
+            if (enemy.position.distanceToSquared(pPos) < 900) {
                 this.destroyEnemy(i);
                 continue;
             }
@@ -162,14 +152,12 @@ export class EnemyManager {
                 this.enemies.splice(i, 1);
             }
         }
-
         this.explosionManager.update(deltaTime);
     }
 
     destroyEnemy(index) {
         const enemy = this.enemies[index];
         if (!enemy) return;
-
         this.explosionManager.create(enemy.position);
         this.soundManager.play('explosion');
         this.scene.remove(enemy);
