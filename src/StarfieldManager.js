@@ -23,28 +23,27 @@ export class StarfieldManager {
                 this.spaceMesh = gltf.scene;
 
                 // Envolve a câmera do jogo
-                this.spaceMesh.scale.set(500, 500, 500);
-                this.spaceMesh.position.set(0, 0, 0);
+                this.spaceMesh.scale.set(1, 1, 1); 
+this.spaceMesh.position.set(0, 0, 0);
 
-                this.spaceMesh.traverse((child) => {
-                    if (child.isMesh) {
-                        if (child.material) {
-                            child.material.side = THREE.DoubleSide; 
-                            child.material.roughness = 1.0;
-                            child.material.metalness = 0.0;
-
-                            // Correção para não ocultar outros objetos
-                            child.material.depthWrite = false; 
-                            child.renderOrder = 0; 
-                            
-                            if (child.material.map) {
-                                child.material.emissive = new THREE.Color(0xffffff);
-                                child.material.emissiveMap = child.material.map;
-                                child.material.emissiveIntensity = 1.0;
-                            }
-                        }
-                    }
-                });
+this.spaceMesh.traverse((child) => {
+    if (child.isMesh) {
+        if (child.material) {
+            child.material.side = THREE.BackSide; // Corrigido: Para ver o interior de uma esfera/céu
+            child.material.roughness = 1.0;
+            child.material.metalness = 0.0;
+            child.material.depthWrite = false; 
+            
+            // 2. REDUÇÃO DO BRILHO:
+            // Intensidade muito alta faz o modelo parecer um borrão branco
+            if (child.material.map) {
+                child.material.emissive = new THREE.Color(0xffffff);
+                child.material.emissiveMap = child.material.map;
+                child.material.emissiveIntensity = 0.3; // Reduzido de 1.0 para 0.3
+            }
+        }
+    }
+});
 
                 this.scene.add(this.spaceMesh);
                 console.log('Cenário espacial em rotação carregado!');
