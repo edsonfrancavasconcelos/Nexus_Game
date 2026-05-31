@@ -78,7 +78,6 @@ create(position, camera = null) {
     frag.velocity.multiplyScalar(0.92);
     frag.mesh.position.add(frag.velocity);
 
-    if (frag.isSmoke) {
 if (frag.isSmoke) {
     // Fumaça: Mantém a cor original (cinza escuro), apenas expande e desvanece
     frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 4));
