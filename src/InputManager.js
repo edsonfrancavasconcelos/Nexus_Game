@@ -13,12 +13,24 @@ export class InputManager {
         // =====================================
         // TECLAS
         // =====================================
-        this.keys = {
-            ArrowUp: false,
-            ArrowDown: false,
-            ArrowLeft: false,
-            ArrowRight: false
-        };
+   this.keys = {
+    ArrowUp: false,
+    ArrowDown: false,
+    ArrowLeft: false,
+    ArrowRight: false,
+    Space: false // Adicionado
+};
+
+// No _initKeyboard, adicione:
+if (e.code === 'Space') {
+    e.preventDefault();
+    this.keys.Space = true;
+}
+
+// No evento 'keyup', adicione:
+if (e.code === 'Space') {
+    this.keys.Space = false;
+}
 
         // =====================================
         // VELOCIDADE MAIS RÁPIDA

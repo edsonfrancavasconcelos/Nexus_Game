@@ -1,116 +1,10 @@
 import * as THREE from 'three';
 import * as fflate from 'fflate';
 
-import { SoundManager } from './SoundManager.js';
-import { InputManager } from './InputManager.js';
-import { Player } from './Player.js';
-import { LaserManager } from './LaserManager.js';
-import { EnemyManager } from './EnemyManager.js';
-import { StarfieldManager } from './StarfieldManager.js';
-import { ExplosionManager } from './ExplosionManager.js';
-import { SpaceEnvironment } from './SpaceEnvironment.js';
-import { ProgressionManager } from './ProgressionManager.js';
+// ... (seus imports permanecem iguais)
 
-window.fflate = fflate;
-
-const GAME_STATE = {
-    MENU: 'menu',
-    PLAYING: 'playing',
-    PAUSED: 'paused',
-    GAME_OVER: 'game_over'
-};
-
-let currentState = GAME_STATE.MENU;
-let score = 0;
-let level = 1;
-let lives = 3;
-
-// --- SCENE SETUP ---
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x010103);
-
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1500);
-camera.position.set(0, 5, 55);
-
-const renderer = new THREE.WebGLRenderer({ 
-    antialias: false, 
-    powerPreference: "high-performance",
-    precision: "mediump", // "lowp" às vezes quebra o render de modelos GLB, use mediump
-    stencil: false,
-    depth: true
-});
-
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-document.body.appendChild(renderer.domElement);
-
-// --- MANAGERS (ORDEM IMPORTANTE) ---
-const soundManager = new SoundManager();
-const laserManager = new LaserManager(scene); // Instancie antes do Player
-const player = new Player(scene, laserManager); // PASSE o laserManager aqui!
-const inputManager = new InputManager();
-const enemyManager = new EnemyManager(scene, camera);
-const starfieldManager = new StarfieldManager(scene);
-const explosionManager = new ExplosionManager(scene);
-const spaceEnvironment = new SpaceEnvironment(scene);
-const progressionManager = new ProgressionManager();
-
-// --- UI ELEMENTS ---
-const overlay = document.getElementById('overlay');
-const mobileControls = document.getElementById('mobile-controls'); // Referência corrigida
-
-function updateHUD() {
-    const scoreVal = document.getElementById('score-val');
-    if (scoreVal) scoreVal.textContent = score.toString().padStart(7, '0');
-}
-
-// --- GAME LOGIC ---
-async function initGame() {
-    soundManager.init();
-    await enemyManager.init();
-}
-
-function startGame() {
-    if (currentState === GAME_STATE.PLAYING) return;
-
-    currentState = GAME_STATE.PLAYING;
-    score = 0;
-    
-    // Esconder Menu e Mostrar Controles Mobile
-    if (overlay) overlay.style.display = 'none';
-    if (mobileControls) mobileControls.style.display = 'block';
-
-    player.mesh.position.set(0, -1, 8);
-    enemyManager.clearAllEnemies?.();
-    enemyManager.spawnWave?.(player);
-
-    soundManager.play('nave', true);
-    updateHUD();
-}
-
-// --- CONTROLES DE TOQUE (MOBILE) ---
-function setupMobileEvents() {
-    const shootBtn = document.getElementById('shootBtn');
-    if (shootBtn) {
-        shootBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            player.isFiring = true; 
-            soundManager.play('laser');
-        });
-        shootBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            player.isFiring = false;
-        });
-    }
-
-    const pauseBtn = document.getElementById('pauseBtn');
-    if (pauseBtn) {
-        pauseBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            // Lógica de pause aqui
-        });
-    }
-}
+// --- MUDANÇA: Variável de controle de áudio ---
+let audioInitialized = false;
 
 // --- LOOP PRINCIPAL ---
 let lastTime = 0;
@@ -122,21 +16,39 @@ function animate(now) {
     lastTime = now;
 
     if (currentState === GAME_STATE.PLAYING) {
+        // 1. Inputs
         const input = inputManager.update();
         
+        // 2. Disparo Teclado
+        if (inputManager.keys.Space) {
+            if (!player.lastFireTime || now - player.lastFireTime > 250) {
+                laserManager.fire(player.mesh, player.mesh);
+                soundManager.play('laser');
+                player.lastFireTime = now;
+            }
+        }
+        
+        // 3. Atualizações
         player.update(input, deltaTime);
         laserManager.update(player.mesh, deltaTime);
         
-        enemyManager.update(laserManager, (points) => {
-            score += points;
-            updateHUD();
-        }, player, deltaTime);
+        // --- CORREÇÃO: Chamada completa do update do EnemyManager ---
+        enemyManager.update(
+            laserManager, 
+            (points) => {
+                score += points;
+                updateHUD();
+            }, 
+            player, 
+            deltaTime, 
+            explosionManager, 
+            soundManager // Agora o enemyManager tem acesso ao som e explosão!
+        );
 
         explosionManager.update(deltaTime);
         starfieldManager.update(deltaTime);
         if (spaceEnvironment.update) spaceEnvironment.update(deltaTime);
 
-        // Câmera segue o Player
         camera.position.x += (player.mesh.position.x * 0.2 - camera.position.x) * 0.05;
         camera.lookAt(player.mesh.position.x * 0.5, player.mesh.position.y, -50);
     }
@@ -144,17 +56,14 @@ function animate(now) {
     renderer.render(scene, camera);
 }
 
-// --- EVENTOS ---
-document.getElementById('start-btn')?.addEventListener('click', startGame);
-
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+// --- EVENTOS CORRIGIDOS ---
+document.getElementById('start-btn')?.addEventListener('click', () => {
+    // Garante que o áudio só inicia no clique
+    if (!audioInitialized) {
+        soundManager.init();
+        audioInitialized = true;
+    }
+    startGame();
 });
 
-// --- EXECUÇÃO ---
-initGame().then(() => {
-    setupMobileEvents();
-    animate(0);
-});
+// ... (restante dos eventos e execução permanecem iguais)
