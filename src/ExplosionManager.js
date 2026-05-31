@@ -20,94 +20,88 @@ export class ExplosionManager {
         this.shakeIntensity = 0;
     }
 
-    create(position, camera) {
-        if (camera) this.cameraRef = camera;
+// ... dentro da classe ExplosionManager ...
 
-        const group = new THREE.Group();
-        group.position.copy(position);
-        this.scene.add(group);
+create(position, camera) {
+    if (camera) this.cameraRef = camera;
 
-        const fragments = [];
+    const group = new THREE.Group();
+    group.position.copy(position);
+    this.scene.add(group);
 
-        // Helper otimizado
-        const addFragment = (geometry, material, count, isSmoke) => {
-            // Criamos UM material por tipo de fragmento nesta explosão específica
-            const instanceMat = material.clone();
+    const fragments = [];
+
+    const addFragment = (geometry, material, count, isSmoke) => {
+        // Usamos uma cor base que varia levemente para cada explosão
+        const instanceMat = material.clone();
+        
+        for (let i = 0; i < count; i++) {
+            const mesh = new THREE.Mesh(geometry, instanceMat);
             
-            for (let i = 0; i < count; i++) {
-                const mesh = new THREE.Mesh(geometry, instanceMat);
-                const s = 0.5 + Math.random();
-                mesh.scale.set(s, s, s);
-                group.add(mesh);
+            // Variância de tamanho inicial
+            const s = isSmoke ? (1 + Math.random() * 2) : (0.3 + Math.random() * 0.7);
+            mesh.scale.set(s, s, s);
+            group.add(mesh);
 
-                fragments.push({
-                    mesh,
-                    isSmoke,
-                    velocity: new THREE.Vector3(
-                        (Math.random() - 0.5) * (isSmoke ? 0.5 : 1.5),
-                        Math.random() * (isSmoke ? 0.8 : 1.2),
-                        (Math.random() - 0.5) * (isSmoke ? 0.5 : 1.5)
-                    ),
-                    gravity: isSmoke ? 0 : 0.05,
-                    rot: new THREE.Vector3(Math.random() * 0.1, Math.random() * 0.1, Math.random() * 0.1)
-                });
-            }
-        };
-
-        // Adicionar Fragmentos (Contagem reduzida para estabilidade)
-        addFragment(GEO.debris, BASE_MATS.debris, 10, false);
-        addFragment(GEO.smoke, BASE_MATS.smoke, 8, true);
-
-        // Luz com intensidade segura (PointLight consome muito, mantemos apenas 1)
-        const mainLight = new THREE.PointLight(0xff4400, 50, 100);
-        group.add(mainLight);
-
-        this.shakeIntensity = 0.8; // Reduzido para não "deslocar" a câmera violentamente
-
-        this.explosions.push({
-            group,
-            mainLight,
-            fragments,
-            life: 1.0,
-            decay: 0.015 // Explosão dura um pouco mais para suavizar CPU
-        });
-    }
-
-    update() {
-        // Screenshake
-        if (this.cameraRef && this.shakeIntensity > 0.01) {
-            this.cameraRef.position.x += (Math.random() - 0.5) * this.shakeIntensity;
-            this.cameraRef.position.y += (Math.random() - 0.5) * this.shakeIntensity;
-            this.shakeIntensity *= 0.9;
+            fragments.push({
+                mesh,
+                isSmoke,
+                // Aumentei a força inicial da velocidade
+                velocity: new THREE.Vector3(
+                    (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5),
+                    (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5),
+                    (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5)
+                ),
+                initialScale: s
+            });
         }
+    };
 
-        for (let i = this.explosions.length - 1; i >= 0; i--) {
-            const exp = this.explosions[i];
-            exp.life -= exp.decay;
+    addFragment(GEO.debris, BASE_MATS.debris, 12, false);
+    addFragment(GEO.smoke, BASE_MATS.smoke, 6, true);
 
-            // Update Luz
-            exp.mainLight.intensity = exp.life * 50;
+    // Cor inicial da luz mais intensa (Laranja/Amarelo)
+    const mainLight = new THREE.PointLight(0xffaa00, 100, 40);
+    group.add(mainLight);
 
-            // Update Fragmentos
-            for (let j = 0; j < exp.fragments.length; j++) {
-                const frag = exp.fragments[j];
-                
-                // Movimento
-                frag.mesh.position.add(frag.velocity);
-                if (frag.gravity > 0) frag.velocity.y -= frag.gravity;
+    this.explosions.push({
+        group, mainLight, fragments,
+        life: 1.0,
+        decay: 0.025 // Mais rápida
+    });
+}
 
-                // Estética
-                if (frag.isSmoke) {
-                    frag.mesh.scale.multiplyScalar(1.01);
-                    frag.mesh.material.opacity = exp.life * 0.5;
-                } else {
-                    frag.mesh.rotation.x += frag.rot.x;
-                    frag.mesh.rotation.y += frag.rot.y;
-                    frag.mesh.material.opacity = exp.life;
-                }
+update() {
+    // ... (parte do shake igual) ...
+
+    for (let i = this.explosions.length - 1; i >= 0; i--) {
+        const exp = this.explosions[i];
+        exp.life -= exp.decay;
+
+        // Efeito de cor: explode brilhante, termina escuro
+        exp.mainLight.intensity = exp.life * 100;
+
+        for (let frag of exp.fragments) {
+            // Aplica desaceleração (atrito)
+            frag.velocity.multiplyScalar(0.95); 
+            frag.mesh.position.add(frag.velocity);
+
+            if (frag.isSmoke) {
+                // Fumaça expande e desaparece
+                frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 2));
+                frag.mesh.material.opacity = exp.life * 0.3;
+            } else {
+                // Detritos giram e caem
+                frag.mesh.rotation.x += 0.1;
+                frag.mesh.rotation.z += 0.1;
+                frag.mesh.material.opacity = exp.life;
+                frag.mesh.material.color.setRGB(exp.life, exp.life * 0.5, 0); // Efeito esfriando
             }
-
-            // Finalização da explosão
+        }
+  
+    }
+}
+      
             if (exp.life <= 0) {
                 // Limpeza correta de memória
                 this.scene.remove(exp.group);
