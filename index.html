@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Raptor Strike: Heavy Fire Edition</title>
+    
     <link rel="stylesheet" href="./style.css">
+    <link rel="shortcut icon" href="#">
 </head>
 <body>
 
@@ -15,18 +17,21 @@
         <button id="start-btn">LIGAR MOTORES DA NAVE</button>
     </div>
 
-    <div id="mobile-controls">
-        
-        <div id="joystick-area">
-            <div id="stick"></div>
-        </div>
-
-        <button id="shootBtn" class="mobile-btn fire-btn">🔥 FIRE</button>
-        
-        <button id="pauseBtn" class="mobile-btn pause-btn">⏸</button>
-        
+    <!-- Joystick Area -->
+    <div id="joystick-area">
+        <div id="stick"></div>
     </div>
 
-    <script type="module" src="/src/index.js"></script>
+    <!-- Controles Mobile -->
+    <div id="mobile-controls">
+        <!-- Botão de Tiro -->
+        <button id="shootBtn" class="mobile-btn fire-btn">🔥 FIRE</button>
+        
+        <!-- Botão de Pause -->
+        <button id="pauseBtn" class="mobile-btn pause-btn">⏸</button>
+    </div>
+
+<script type="module" src="/src/index.js"></script>
+
 </body>
 </html>

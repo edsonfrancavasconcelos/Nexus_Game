@@ -1,108 +1,48 @@
-/* ==================== CONTROLES MOBILE (CONSOLIDADO) ==================== */
+/* No seu CSS, procure e altere estas partes: */
 
 #mobile-controls {
     position: fixed;
-    top: 0;
+    top: 0;   /* Mude para top 0 para cobrir a tela toda com pointer-events: none */
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 50; /* Garante que fique acima do jogo, mas abaixo do overlay de menu */
-    pointer-events: none; /* Deixa o toque passar para o jogo nas áreas vazias */
-    display: none; /* Começa escondido, o JavaScript ou o Media Query ativa */
+    z-index: 15;
+    pointer-events: none;
+    display: block; /* Mude de none para block */
 }
 
-/* Joystick Area */
+/* Garante que o joystick seja visível no mobile */
 #joystick-area {
-    position: absolute;
-    bottom: 40px;
-    left: 40px;
-    width: 130px;
-    height: 130px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 3px solid rgba(0, 255, 255, 0.3);
-    border-radius: 50%;
-    display: flex; 
-    justify-content: center;
-    align-items: center;
-    touch-action: none;
-    pointer-events: auto; /* IMPORTANTE: Faz o joystick capturar o movimento */
+    display: flex; /* Garante que ele apareça */
+    pointer-events: auto; /* IMPORTANTE: permite capturar o toque */
 }
 
-#stick {
-    width: 55px;
-    height: 55px;
-    background: #00ffff;
-    border-radius: 50%;
-    box-shadow: 0 0 20px #00ffff, inset 0 0 10px rgba(255,255,255,0.6);
-    pointer-events: none; /* O stick em si não recebe toque, apenas a área do joystick */
-}
-
-/* Botão de Tiro */
-#shootBtn {
-    position: absolute;
-    bottom: 35px;
-    right: 35px;
-    width: 95px;
-    height: 95px;
-    background: radial-gradient(circle at 40% 40%, #ff3366, #cc1122);
-    border: 4px solid #ff3366;
-    border-radius: 50%;
-    color: white;
-    font-size: 22px;
-    font-weight: bold;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 0 25px #ff3366;
-    pointer-events: auto; /* Reativa o clique */
-    touch-action: manipulation;
-    animation: pulse 2s infinite;
-    transition: transform 0.1s ease;
-}
-
-#shootBtn:active {
-    transform: scale(0.88);
-    box-shadow: 0 0 15px #ff6699;
-}
-
-/* Botão de Pause */
+/* Ajuste no botão de pause para não ficar em cima do score */
 #pauseBtn {
-    position: absolute;
     top: 20px;
     right: 20px;
-    width: 58px;
-    height: 58px;
-    background: #ef4444;
-    border: 3px solid #ffffff;
-    border-radius: 50%;
-    color: white;
-    font-size: 26px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    pointer-events: auto;
-    touch-action: manipulation;
+    z-index: 100; /* Garante que fique acima de tudo */
 }
 
-/* ==================== ANIMAÇÕES E MEDIA QUERIES ==================== */
+/* Se NÃO for touch, esconde os controles */
+@media (hover: hover) and (pointer: fine) {
+    #mobile-controls, #joystick-area {
+        display: none !important;
+    }
+}
 
+/* Se FOR touch, garante que apareçam */
+@media (pointer: coarse) {
+    #mobile-controls {
+        display: block !important;
+    }
+}
 @keyframes pulse {
     0% { box-shadow: 0 0 15px #ff3366; }
     50% { box-shadow: 0 0 35px #ff3366; }
     100% { box-shadow: 0 0 15px #ff3366; }
 }
 
-/* Se for um dispositivo com toque (Celular/Tablet), mostra os controles */
-@media (pointer: coarse) {
-    #mobile-controls {
-        display: block !important;
-    }
-}
-
-/* Se for PC com mouse, esconde tudo para não atrapalhar */
-@media (hover: hover) and (pointer: fine) {
-    #mobile-controls {
-        display: none !important;
-    }
+#shootBtn {
+    animation: pulse 2s infinite;
 }
