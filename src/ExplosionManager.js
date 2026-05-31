@@ -61,17 +61,17 @@ export class ExplosionManager {
         addFragment(GEO.debris, BASE_MATS.debris, 12, false);
         addFragment(GEO.smoke, BASE_MATS.smoke, 6, true);
 
-        // Luz da explosão
-        const mainLight = new THREE.PointLight(0xffaa00, 100, 40);
-        group.add(mainLight);
+  // Luz da explosão - Aumentamos a intensidade inicial e o raio para brilhar mais
+const mainLight = new THREE.PointLight(0xffdd00, 200, 60); 
+group.add(mainLight);
 
-        this.explosions.push({
-            group,
-            mainLight,
-            fragments,
-            life: 1.0,
-            decay: 0.028
-        });
+this.explosions.push({
+    group,
+    mainLight,
+    fragments,
+    life: 1.0,
+    decay: 0.035 // Aumentamos um pouco para a explosão ter um "soco" mais rápido
+});
     }
 
     update() {
@@ -82,28 +82,30 @@ export class ExplosionManager {
             // Atualiza luz
             exp.mainLight.intensity = exp.life * 100;
 
-            for (let frag of exp.fragments) {
-                // Movimento
-                frag.velocity.multiplyScalar(0.95);
-                frag.mesh.position.add(frag.velocity);
+        for (let frag of exp.fragments) {
+    // Movimento - Aumentamos a resistência do ar (0.92) para um efeito de parada brusca
+    frag.velocity.multiplyScalar(0.92);
+    frag.mesh.position.add(frag.velocity);
 
-                if (frag.isSmoke) {
-                    // Fumaça
-                    frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 2));
-                    frag.mesh.material.opacity = exp.life * 0.35;
-                } else {
-                    // Detritos
-                    frag.mesh.rotation.x += 0.12;
-                    frag.mesh.rotation.z += 0.08;
-                    frag.mesh.material.opacity = exp.life * 0.9;
-                    frag.mesh.material.color.setRGB(
-                        exp.life * 0.8,
-                        exp.life * 0.4,
-                        0
-                    );
-                }
-            }
-
+    if (frag.isSmoke) {
+        // Fumaça - Aumentamos o efeito de escala para parecer que se dispersa melhor
+        frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 4));
+        frag.mesh.material.opacity = exp.life * 0.4;
+    } else {
+        // Detritos - Aumentamos a rotação para parecerem mais caóticos
+        frag.mesh.rotation.x += 0.25;
+        frag.mesh.rotation.y += 0.25;
+        frag.mesh.rotation.z += 0.25;
+        
+        frag.mesh.material.opacity = exp.life;
+        // Melhoria na cor: transição mais quente (amarelo para vermelho profundo)
+        frag.mesh.material.color.setRGB(
+            exp.life * 1.5,
+            exp.life * 0.8,
+            exp.life * 0.2
+        );
+    }
+}
             // Remover explosão quando acabar
             if (exp.life <= 0) {
                 this.scene.remove(exp.group);
