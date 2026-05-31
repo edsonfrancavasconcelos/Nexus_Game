@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import * as fflate from 'fflate';
+import { unzipSync, strFromU8 } from 'fflate';
+window.fflate = { unzipSync, strFromU8 };
 
 import { SoundManager } from './SoundManager.js';
 import { InputManager } from './InputManager.js';
@@ -102,15 +103,27 @@ function animate(now) {
     }
 }
 
-// --- INICIALIZAÇÃO ---
+// --- EXECUÇÃO ---
 window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('start-btn')?.addEventListener('click', () => {
-        if (!audioInitialized) {
-            soundManager.init();
-            audioInitialized = true;
-        }
-        startGame();
-    });
+    const startBtn = document.getElementById('start-btn');
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            if (!audioInitialized) {
+                soundManager.init();
+                audioInitialized = true;
+            }
+            startGame();
+        });
+    }
 
-    initGame().then(() => animate(0));
+    // Inicializa o ambiente de jogo mas NÃO inicia o loop de jogo (animate) ainda
+    initGame()
+        .then(() => {
+            console.log("Assets carregados, pronto para iniciar.");
+            // Chamamos o animate para o Three.js renderizar o menu (estático)
+            // Se preferir, apenas chame o render uma vez ou inicie o loop aqui
+            animate(0); 
+        })
+        .catch(err => console.error("Erro ao carregar assets:", err));
 });
