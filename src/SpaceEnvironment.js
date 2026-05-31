@@ -7,21 +7,36 @@ export class SpaceEnvironment {
     }
 
     initEnvironment() {
-        // 1. ILUMINAÇÃO BÁSICA (Muito leve)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Luz suave em tudo
+        // 1. ILUMINAÇÃO AMBIENTE (Reduzida para criar contraste)
+        // Se a luz ambiente for muito alta, a nave perde o efeito de metal/brilho.
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.4); 
         this.scene.add(ambientLight);
 
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1); // Luz vindo de um lado
-        sunLight.position.set(5, 10, 7);
+        // 2. LUZ DIRECIONAL (O "Sol")
+        // Posicionada levemente atrás e acima da câmera para realçar as bordas da nave.
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        sunLight.position.set(10, 20, 15);
         this.scene.add(sunLight);
 
-        // 2. COR DE FUNDO (Melhor que carregar um modelo pesado)
-        this.scene.background = new THREE.Color(0x020205);
+        // 3. LUZ DE PREENCHIMENTO (Rim Light)
+        // Adiciona um azulado sutil do lado oposto para dar profundidade.
+        const rimLight = new THREE.PointLight(0x3344ff, 0.6);
+        rimLight.position.set(-20, -10, -10);
+        this.scene.add(rimLight);
 
-        // 3. NEBULOSA SIMPLIFICADA (Opcional - Adiciona profundidade sem pesar)
-        const fog = new THREE.Fog(0x020205, 100, 1000);
-        this.scene.fog = fog;
+        // 4. FUNDO DO ESPAÇO
+        // Usando um tom de azul marinho quase preto para melhor contraste com as estrelas.
+        this.scene.background = new THREE.Color(0x010103);
 
-        console.log('AMBIENTE OTIMIZADO: Modelo GLB removido para ganho de FPS.');
+        // 5. NEVOEIRO EXPONENCIAL (Mais realista para o vácuo)
+        // O FogExp2 escurece objetos conforme a distância de forma mais suave que o Fog comum.
+        this.scene.fog = new THREE.FogExp2(0x010103, 0.0015);
+
+        console.log('--- AMBIENTE CONFIGURADO ---');
+    }
+
+    // Método para atualizar cores ou intensidades dinamicamente (ex: mudar de fase)
+    update(deltaTime) {
+        // Você pode adicionar uma rotação leve na sunLight ou pulsar a rimLight aqui
     }
 }

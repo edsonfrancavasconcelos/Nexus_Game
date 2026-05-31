@@ -13,9 +13,6 @@ import { ProgressionManager } from './ProgressionManager.js';
 
 window.fflate = fflate;
 
-// =========================================
-// GAME STATE
-// =========================================
 const GAME_STATE = {
     MENU: 'menu',
     PLAYING: 'playing',
@@ -28,58 +25,46 @@ let score = 0;
 let level = 1;
 let lives = 3;
 
-// =========================================
-// SCENE, CAMERA, RENDERER
-// =========================================
+// --- SCENE SETUP ---
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x010103); // Quase preto para performance
+scene.background = new THREE.Color(0x010103);
 
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1500); // Plano de corte próximo reduzido
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1500);
 camera.position.set(0, 5, 55);
 
 const renderer = new THREE.WebGLRenderer({ 
-    antialias: false, // PERFORMANCE: Desativado
+    antialias: false, 
     powerPreference: "high-performance",
-    precision: "lowp", // PERFORMANCE: Precisão menor para shaders mais rápidos
+    precision: "mediump", // "lowp" às vezes quebra o render de modelos GLB, use mediump
     stencil: false,
     depth: true
 });
 
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // PERFORMANCE: Máximo 1.5x (suficiente para nitidez)
-renderer.shadowMap.enabled = false; 
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 document.body.appendChild(renderer.domElement);
 
-// =========================================
-// MANAGERS
-// =========================================
+// --- MANAGERS (ORDEM IMPORTANTE) ---
 const soundManager = new SoundManager();
+const laserManager = new LaserManager(scene); // Instancie antes do Player
+const player = new Player(scene, laserManager); // PASSE o laserManager aqui!
 const inputManager = new InputManager();
-const player = new Player(scene);
-const laserManager = new LaserManager(scene);
 const enemyManager = new EnemyManager(scene, camera);
 const starfieldManager = new StarfieldManager(scene);
 const explosionManager = new ExplosionManager(scene);
 const spaceEnvironment = new SpaceEnvironment(scene);
 const progressionManager = new ProgressionManager();
 
-// =========================================
-// UI & HUD
-// =========================================
+// --- UI ELEMENTS ---
 const overlay = document.getElementById('overlay');
-const scoreVal = document.getElementById('score-val');
-const levelVal = document.getElementById('level-val');
-const livesVal = document.getElementById('lives-val');
+const mobileControls = document.getElementById('mobile-controls'); // Referência corrigida
 
 function updateHUD() {
+    const scoreVal = document.getElementById('score-val');
     if (scoreVal) scoreVal.textContent = score.toString().padStart(7, '0');
-    if (levelVal) levelVal.textContent = level;
-    if (livesVal) livesVal.textContent = '❤️'.repeat(Math.max(0, lives));
 }
 
-// =========================================
-// GAME LOGIC
-// =========================================
+// --- GAME LOGIC ---
 async function initGame() {
     soundManager.init();
     await enemyManager.init();
@@ -90,10 +75,10 @@ function startGame() {
 
     currentState = GAME_STATE.PLAYING;
     score = 0;
-    level = 1;
-    lives = 3;
-
+    
+    // Esconder Menu e Mostrar Controles Mobile
     if (overlay) overlay.style.display = 'none';
+    if (mobileControls) mobileControls.style.display = 'block';
 
     player.mesh.position.set(0, -1, 8);
     enemyManager.clearAllEnemies?.();
@@ -103,41 +88,31 @@ function startGame() {
     updateHUD();
 }
 
-function handleShoot() {
-    if (currentState !== GAME_STATE.PLAYING) return;
-    soundManager.play('laser');
-    laserManager.fire(player.mesh, player.shipModel);
+// --- CONTROLES DE TOQUE (MOBILE) ---
+function setupMobileEvents() {
+    const shootBtn = document.getElementById('shootBtn');
+    if (shootBtn) {
+        shootBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            player.isFiring = true; 
+            soundManager.play('laser');
+        });
+        shootBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            player.isFiring = false;
+        });
+    }
+
+    const pauseBtn = document.getElementById('pauseBtn');
+    if (pauseBtn) {
+        pauseBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            // Lógica de pause aqui
+        });
+    }
 }
 
-// =========================================
-// EVENT LISTENERS
-// =========================================
-document.getElementById('start-btn')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    startGame();
-});
-
-window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') {
-        e.preventDefault();
-        handleShoot();
-    }
-});
-
-// Throttling no resize para não sobrecarregar a CPU
-let resizeTimeout;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }, 200);
-});
-
-// =========================================
-// MAIN LOOP
-// =========================================
+// --- LOOP PRINCIPAL ---
 let lastTime = 0;
 
 function animate(now) {
@@ -154,44 +129,32 @@ function animate(now) {
         
         enemyManager.update(laserManager, (points) => {
             score += points;
-            if (progressionManager.addScore(points)) {
-                level = progressionManager.getLevel();
-                updateHUD();
-            }
-            updateHUD();    
+            updateHUD();
         }, player, deltaTime);
 
         explosionManager.update(deltaTime);
         starfieldManager.update(deltaTime);
-        
         if (spaceEnvironment.update) spaceEnvironment.update(deltaTime);
 
-        // Suavização da Câmera (Interpolação Linear Simples)
-        const targetCamX = player.mesh.position.x * 0.2;
-        const targetCamY = 5 + (player.mesh.position.y * 0.15);
-        
-        camera.position.x += (targetCamX - camera.position.x) * 0.05;
-        camera.position.y += (targetCamY - camera.position.y) * 0.05;
+        // Câmera segue o Player
+        camera.position.x += (player.mesh.position.x * 0.2 - camera.position.x) * 0.05;
         camera.lookAt(player.mesh.position.x * 0.5, player.mesh.position.y, -50);
     }
 
     renderer.render(scene, camera);
 }
 
-// =========================================
-// RUN
-// =========================================
-initGame().then(() => {
-    animate(0);
-    if (overlay) overlay.style.display = 'flex';
+// --- EVENTOS ---
+document.getElementById('start-btn')?.addEventListener('click', startGame);
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// No final do seu arquivo principal
-function initMobileControls() {
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-        document.getElementById('mobile-controls').style.display = 'block';
-    }
-}
-
-window.addEventListener('load', initMobileControls);
+// --- EXECUÇÃO ---
+initGame().then(() => {
+    setupMobileEvents();
+    animate(0);
+});

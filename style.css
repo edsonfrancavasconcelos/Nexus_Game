@@ -5,6 +5,7 @@
     box-sizing: border-box;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent; /* Remove o brilho de toque no mobile */
 }
 
 body {
@@ -13,7 +14,7 @@ body {
     width: 100vw;
     height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    touch-action: none;
+    touch-action: none; /* Impede zoom e scroll nativo */
 }
 
 canvas {
@@ -34,7 +35,7 @@ canvas {
     font-weight: bold;
     z-index: 10;
     text-shadow: 0 0 8px #00ffff;
-    pointer-events: none;
+    pointer-events: none; /* Importante: o clique passa pelo texto */
 }
 
 /* ==================== TELA DE INÍCIO ==================== */
@@ -49,7 +50,7 @@ canvas {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: 20;
+    z-index: 100; /* Garante que o menu fique sobre tudo */
 }
 
 #overlay h1 {
@@ -82,15 +83,20 @@ canvas {
 /* ==================== CONTROLES MOBILE ==================== */
 #mobile-controls {
     position: fixed;
-    bottom: 0;
+    top: 0; /* Ajustado para cobrir a tela inteira */
     left: 0;
-    right: 0;
-    z-index: 15;
-    pointer-events: none;
-    display: none; /* Será ativado via JavaScript em dispositivos mobile */
+    width: 100vw;
+    height: 100vh;
+    z-index: 50; 
+    pointer-events: none; /* A tela toda é transparente ao toque... */
+    display: none; 
 }
 
-/* Joystick */
+/* ...mas reativamos o toque apenas nos elementos filhos */
+#mobile-controls > * {
+    pointer-events: auto; 
+}
+
 #joystick-area {
     position: absolute;
     bottom: 40px;
@@ -100,7 +106,6 @@ canvas {
     background: rgba(255, 255, 255, 0.08);
     border: 3px solid rgba(0, 255, 255, 0.3);
     border-radius: 50%;
-    z-index: 10;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -112,13 +117,10 @@ canvas {
     height: 55px;
     background: #00ffff;
     border-radius: 50%;
-    box-shadow: 0 0 20px #00ffff,
-                inset 0 0 10px rgba(255,255,255,0.6);
+    box-shadow: 0 0 20px #00ffff, inset 0 0 10px rgba(255,255,255,0.6);
     pointer-events: none;
-    transition: transform 0.03s linear;
 }
 
-/* Botão de Tiro */
 #shootBtn {
     position: absolute;
     bottom: 35px;
@@ -135,17 +137,12 @@ canvas {
     justify-content: center;
     align-items: center;
     box-shadow: 0 0 25px #ff3366;
-    pointer-events: all;
     touch-action: manipulation;
-    transition: all 0.1s ease;
+    transition: transform 0.1s;
 }
 
-#shootBtn:active {
-    transform: scale(0.88);
-    box-shadow: 0 0 15px #ff6699;
-}
+#shootBtn:active { transform: scale(0.85); }
 
-/* Botão de Pause */
 #pauseBtn {
     position: absolute;
     top: 20px;
@@ -160,39 +157,20 @@ canvas {
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-    pointer-events: all;
     touch-action: manipulation;
-    transition: all 0.2s ease;
-}
-
-#pauseBtn:active {
-    transform: scale(0.9);
-    background: #22c55e;
 }
 
 /* ==================== RESPONSIVIDADE ==================== */
 @media (pointer: fine) {
-    #joystick-area,
-    #mobile-controls {
-        display: none !important;
-    }
+    #mobile-controls { display: none !important; }
 }
 
-/* Melhoria para telas muito pequenas */
+@media (pointer: coarse) {
+    /* Garante que, se for touch, o container pai não bloqueie cliques */
+    #mobile-controls { display: block; }
+}
+
 @media (max-width: 480px) {
-    #shootBtn {
-        width: 85px;
-        height: 85px;
-        font-size: 20px;
-        bottom: 25px;
-        right: 25px;
-    }
-    
-    #joystick-area {
-        width: 110px;
-        height: 110px;
-        bottom: 30px;
-        left: 30px;
-    }
+    #shootBtn { width: 85px; height: 85px; bottom: 25px; right: 25px; }
+    #joystick-area { width: 110px; height: 110px; bottom: 30px; left: 30px; }
 }
