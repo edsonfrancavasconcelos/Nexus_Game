@@ -15,10 +15,10 @@ window.fflate = fflate;
 
 const GAME_STATE = { MENU: 'menu', PLAYING: 'playing' };
 let currentState = GAME_STATE.MENU;
-let score = 0, level = 1, lives = 3;
+let score = 0, level = 1;
 
 // =========================================
-// RENDERER OTIMIZADO (O segredo da fluidez)
+// RENDERER OTIMIZADO (Foco em Performance)
 // =========================================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x010103);
@@ -27,22 +27,21 @@ const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerH
 camera.position.set(0, 5, 55);
 
 const renderer = new THREE.WebGLRenderer({ 
-    antialias: false,        // DESATIVADO: Melhora muito o FPS
+    antialias: false,        // Essencial para rodar em celular sem travar
     powerPreference: "high-performance",
-    precision: "lowp"        // Cálculos simplificados para CPUs fracas
+    precision: "lowp" 
 });
 
-// Força uma resolução menor para não travar em telas muito grandes
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2)); 
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = false; // Sombras pesam demais, mantemos desligado
+renderer.shadowMap.enabled = false; 
 document.body.appendChild(renderer.domElement);
 
 // =========================================
 // MANAGERS
 // =========================================
 const soundManager = new SoundManager();
-const inputManager = new InputManager();
+const inputManager = new InputManager(); // Garanta que este manager suporte o joystick do HTML
 const player = new Player(scene);
 const laserManager = new LaserManager(scene);
 const enemyManager = new EnemyManager(scene, camera);
@@ -53,6 +52,10 @@ const progressionManager = new ProgressionManager();
 
 const overlay = document.getElementById('overlay');
 const scoreVal = document.getElementById('score-val');
+
+// --- Elementos Mobile ---
+const shootBtn = document.getElementById('shootBtn');
+const pauseBtn = document.getElementById('pauseBtn');
 
 function updateHUD() {
     if (scoreVal) scoreVal.textContent = score.toString().padStart(7, '0');
@@ -66,7 +69,7 @@ async function initGame() {
 function startGame() {
     if (currentState === GAME_STATE.PLAYING) return;
     currentState = GAME_STATE.PLAYING;
-    score = 0; level = 1; lives = 3;
+    score = 0;
     if (overlay) overlay.style.display = 'none';
     player.mesh.position.set(0, -1, 8);
     enemyManager.clearAllEnemies?.();
@@ -81,11 +84,17 @@ function handleShoot() {
     laserManager.fire(player.mesh, player.shipModel);
 }
 
+// =========================================
+// EVENTOS DE CONTROLE (PC E MOBILE)
+// =========================================
+
+// Botão Iniciar (Menu)
 document.getElementById('start-btn')?.addEventListener('click', (e) => {
     e.stopPropagation();
     startGame();
 });
 
+// Teclado
 window.addEventListener('keydown', (e) => {
     if (e.code === 'Space') {
         e.preventDefault();
@@ -93,26 +102,47 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
+// Botão de Tiro Mobile (🔥 FIRE)
+if (shootBtn) {
+    shootBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Bloqueia gestos do navegador
+        handleShoot();
+    }, { passive: false });
+}
+
+// Botão de Pause Mobile (⏸)
+if (pauseBtn) {
+    pauseBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (currentState === GAME_STATE.PLAYING) {
+            currentState = GAME_STATE.MENU;
+            if (overlay) overlay.style.display = 'flex';
+        } else {
+            startGame();
+        }
+    }, { passive: false });
+}
+
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-}, false);
+});
 
 // =========================================
-// LOOP DE ANIMAÇÃO OTIMIZADO
+// LOOP DE ANIMAÇÃO
 // =========================================
 let lastTime = 0;
 
 function animate(now) {
     requestAnimationFrame(animate);
 
-    // Limita o deltaTime para evitar "pulos" na tela
     const deltaTime = Math.min((now - lastTime) / 1000, 0.05); 
     lastTime = now;
 
+    // Só processa lógica de jogo se não estiver pausado/menu
     if (currentState === GAME_STATE.PLAYING) {
-        const input = inputManager.update();
+        const input = inputManager.update(); 
         
         player.update(input, deltaTime);
         laserManager.update(player.mesh, deltaTime);
@@ -127,8 +157,8 @@ function animate(now) {
         starfieldManager.update(deltaTime);
         if (spaceEnvironment.update) spaceEnvironment.update(deltaTime);
 
-        // Chase Cam simplificada
-        camera.position.x += (player.mesh.position.x * 0.15 - camera.position.x) * 0.05;
+        // Suavização da Câmera (Chase Cam)
+        camera.position.x += (player.mesh.position.x * 0.2 - camera.position.x) * 0.1;
         camera.lookAt(player.mesh.position.x * 0.5, 0, -50);
     }
 
