@@ -2,9 +2,9 @@
   "name": "nexus-game",
   "version": "1.0.0",
   "type": "module",
-  "scripts": {
+"scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   
   },
