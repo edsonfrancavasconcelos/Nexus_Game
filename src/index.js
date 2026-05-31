@@ -153,7 +153,18 @@ window.addEventListener('resize', () => {
 });
 
 // --- EXECUÇÃO ---
-initGame().then(() => {
-    setupMobileEvents();
-    animate(0);
+window.addEventListener('DOMContentLoaded', () => {
+    // Agora o DOM está pronto e soundManager já foi criado lá em cima
+    document.getElementById('start-btn')?.addEventListener('click', () => {
+        if (!audioInitialized) {
+            soundManager.init();
+            audioInitialized = true;
+        }
+        startGame();
+    });
+
+    initGame().then(() => {
+        setupMobileEvents();
+        animate(0);
+    });
 });
