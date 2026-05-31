@@ -80,6 +80,12 @@ function startGame() {
 
 function handleShoot() {
     if (currentState !== GAME_STATE.PLAYING) return;
+    
+    // FORÇAMOS a atualização da matriz antes de atirar
+    // Sem isso, o laser nasce na posição "antiga" da nave
+    player.mesh.updateMatrixWorld(); 
+    if (player.shipModel) player.shipModel.updateMatrixWorld();
+
     soundManager.play('laser');
     laserManager.fire(player.mesh, player.shipModel);
 }
@@ -140,16 +146,17 @@ function animate(now) {
     const deltaTime = Math.min((now - lastTime) / 1000, 0.05); 
     lastTime = now;
 
-    // Só processa lógica de jogo se não estiver pausado/menu
     if (currentState === GAME_STATE.PLAYING) {
         const input = inputManager.update(); 
         
         player.update(input, deltaTime);
+        
+        // IMPORTANTE: O laserManager precisa do deltaTime para mover os lasers rápido o suficiente
         laserManager.update(player.mesh, deltaTime);
         
+        // Passamos o laserManager completo para o enemyManager ter acesso à lista .lasers
         enemyManager.update(laserManager, (points) => {
             score += points;
-            if (progressionManager.addScore(points)) level = progressionManager.getLevel();
             updateHUD();    
         }, player, deltaTime);
 
@@ -157,9 +164,11 @@ function animate(now) {
         starfieldManager.update(deltaTime);
         if (spaceEnvironment.update) spaceEnvironment.update(deltaTime);
 
-        // Suavização da Câmera (Chase Cam)
+        // Suavização da Câmera
         camera.position.x += (player.mesh.position.x * 0.2 - camera.position.x) * 0.1;
-        camera.lookAt(player.mesh.position.x * 0.5, 0, -50);
+        
+        // Olhamos um pouco mais para baixo para ver os lasers atingindo
+        camera.lookAt(player.mesh.position.x * 0.5, 0, -100);
     }
 
     renderer.render(scene, camera);
