@@ -1,0 +1,198 @@
+/* ==================== CONFIGURAÇÃO GLOBAL ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body {
+    overflow: hidden;
+    background-color: #020208;
+    width: 100vw;
+    height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    touch-action: none;
+}
+
+canvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* ==================== INTERFACE DO JOGO ==================== */
+#ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 10;
+    text-shadow: 0 0 8px #00ffff;
+    pointer-events: none;
+}
+
+/* ==================== TELA DE INÍCIO ==================== */
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(5, 5, 15, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+}
+
+#overlay h1 {
+    color: #ffffff;
+    font-size: 52px;
+    margin-bottom: 30px;
+    letter-spacing: 6px;
+    text-shadow: 0 0 15px #ff0033;
+}
+
+#overlay button {
+    padding: 16px 40px;
+    font-size: 19px;
+    font-weight: bold;
+    color: #00ffff;
+    background: transparent;
+    border: 3px solid #00ffff;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+    transition: all 0.3s ease;
+}
+
+#overlay button:hover {
+    background: #00ffff;
+    color: #020208;
+    box-shadow: 0 0 30px #00ffff;
+}
+
+/* ==================== CONTROLES MOBILE ==================== */
+#mobile-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 15;
+    pointer-events: none;
+    display: none; /* Será ativado via JavaScript em dispositivos mobile */
+}
+
+/* Joystick */
+#joystick-area {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    width: 130px;
+    height: 130px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 3px solid rgba(0, 255, 255, 0.3);
+    border-radius: 50%;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: none;
+}
+
+#stick {
+    width: 55px;
+    height: 55px;
+    background: #00ffff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px #00ffff,
+                inset 0 0 10px rgba(255,255,255,0.6);
+    pointer-events: none;
+    transition: transform 0.03s linear;
+}
+
+/* Botão de Tiro */
+#shootBtn {
+    position: absolute;
+    bottom: 35px;
+    right: 35px;
+    width: 95px;
+    height: 95px;
+    background: radial-gradient(circle at 40% 40%, #ff3366, #cc1122);
+    border: 4px solid #ff3366;
+    border-radius: 50%;
+    color: white;
+    font-size: 22px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 25px #ff3366;
+    pointer-events: all;
+    touch-action: manipulation;
+    transition: all 0.1s ease;
+}
+
+#shootBtn:active {
+    transform: scale(0.88);
+    box-shadow: 0 0 15px #ff6699;
+}
+
+/* Botão de Pause */
+#pauseBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 58px;
+    height: 58px;
+    background: #ef4444;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    color: white;
+    font-size: 26px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    pointer-events: all;
+    touch-action: manipulation;
+    transition: all 0.2s ease;
+}
+
+#pauseBtn:active {
+    transform: scale(0.9);
+    background: #22c55e;
+}
+
+/* ==================== RESPONSIVIDADE ==================== */
+@media (pointer: fine) {
+    #joystick-area,
+    #mobile-controls {
+        display: none !important;
+    }
+}
+
+/* Melhoria para telas muito pequenas */
+@media (max-width: 480px) {
+    #shootBtn {
+        width: 85px;
+        height: 85px;
+        font-size: 20px;
+        bottom: 25px;
+        right: 25px;
+    }
+    
+    #joystick-area {
+        width: 110px;
+        height: 110px;
+        bottom: 30px;
+        left: 30px;
+    }
+}
