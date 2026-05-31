@@ -1,7 +1,5 @@
 import * as THREE from 'three';
 import { unzipSync, strFromU8 } from 'fflate';
-
-// Configuração única para fflate
 window.fflate = { unzipSync, strFromU8 };
 
 import { SoundManager } from './SoundManager.js';
@@ -14,9 +12,11 @@ import { ExplosionManager } from './ExplosionManager.js';
 import { SpaceEnvironment } from './SpaceEnvironment.js';
 import { ProgressionManager } from './ProgressionManager.js';
 
+window.fflate = fflate;
+
 // --- DECLARAÇÕES GLOBAIS ---
 let audioInitialized = false;
-let currentState = 'menu';
+let currentState = 'menu'; // Valor inicial
 let score = 0;
 
 const GAME_STATE = { MENU: 'menu', PLAYING: 'playing', PAUSED: 'paused', GAME_OVER: 'game_over' };
@@ -27,16 +27,11 @@ scene.background = new THREE.Color(0x010103);
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1500);
 camera.position.set(0, 5, 55);
 
-// Adicionando o AudioListener aqui (O "ouvido" do jogo)
-const audioListener = new THREE.AudioListener();
-camera.add(audioListener);
-
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", precision: "mediump" });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Instanciamento
-const soundManager = new SoundManager(audioListener); // Passando o listener
+const soundManager = new SoundManager();
 const laserManager = new LaserManager(scene);
 const player = new Player(scene, laserManager);
 const inputManager = new InputManager();
@@ -53,7 +48,7 @@ function updateHUD() {
 }
 
 async function initGame() {
-    // soundManager já deve receber o listener no constructor ou via init
+    soundManager.init();
     await enemyManager.init();
 }
 
@@ -80,6 +75,7 @@ function animate(now) {
     if (currentState === GAME_STATE.PLAYING) {
         const input = inputManager.update();
         
+        // Disparo
         if (inputManager.keys.Space) {
             if (!player.lastFireTime || now - player.lastFireTime > 250) {
                 laserManager.fire(player.mesh, player.mesh);
@@ -91,6 +87,7 @@ function animate(now) {
         player.update(input, deltaTime);
         laserManager.update(player.mesh, deltaTime);
         
+        // UPDATE DO ENEMY MANAGER (CRÍTICO)
         enemyManager.update(
             laserManager, 
             (pts) => { score += pts; updateHUD(); }, 
@@ -109,9 +106,8 @@ function animate(now) {
 // --- INICIALIZAÇÃO ---
 window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('start-btn')?.addEventListener('click', () => {
-        // Tenta desbloquear o áudio do navegador (Contexto)
         if (!audioInitialized) {
-            soundManager.init(); 
+            soundManager.init();
             audioInitialized = true;
         }
         startGame();
