@@ -26,53 +26,44 @@ export class ExplosionManager {
         this.cameraRef = null;
     }
 
-    create(position, camera = null) {
-        if (camera) this.cameraRef = camera;
+create(position, camera = null) {
+    if (camera) this.cameraRef = camera;
 
-        const group = new THREE.Group();
-        group.position.copy(position);
-        this.scene.add(group);
+    const group = new THREE.Group();
+    group.position.copy(position);
+    this.scene.add(group);
 
-        const fragments = [];
+    const fragments = [];
 
-        const addFragment = (geometry, material, count, isSmoke) => {
-            for (let i = 0; i < count; i++) {
-                const instanceMat = material.clone();
-                const mesh = new THREE.Mesh(geometry, instanceMat);
+    // Ajuste: Explosões mais rápidas e com cores mais vivas
+    const addFragment = (geometry, material, count, isSmoke) => {
+        for (let i = 0; i < count; i++) {
+            const mesh = new THREE.Mesh(geometry, material); // Removi o clone() para testar performance
+            const s = isSmoke ? (2 + Math.random() * 2) : (0.5 + Math.random() * 1.5);
+            mesh.scale.set(s, s, s);
+            group.add(mesh);
 
-                const s = isSmoke ? (1 + Math.random() * 2) : (0.3 + Math.random() * 0.7);
-                mesh.scale.set(s, s, s);
-                group.add(mesh);
+            fragments.push({
+                mesh,
+                isSmoke,
+                velocity: new THREE.Vector3(
+                    (Math.random() - 0.5) * 5, // Velocidade maior
+                    (Math.random() - 0.5) * 5,
+                    (Math.random() - 0.5) * 5
+                ),
+                initialScale: s
+            });
+        }
+    };
 
-                fragments.push({
-                    mesh,
-                    isSmoke,
-                    velocity: new THREE.Vector3(
-                        (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5),
-                        (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5),
-                        (Math.random() - 0.5) * (isSmoke ? 0.8 : 2.5)
-                    ),
-                    initialScale: s
-                });
-            }
-        };
+    addFragment(GEO.debris, BASE_MATS.debris, 15, false);
+    addFragment(GEO.smoke, BASE_MATS.smoke, 10, true);
 
-        // Cria fragmentos
-        addFragment(GEO.debris, BASE_MATS.debris, 12, false);
-        addFragment(GEO.smoke, BASE_MATS.smoke, 6, true);
+    const mainLight = new THREE.PointLight(0xff6600, 300, 50); // Luz mais forte e curta
+    group.add(mainLight);
 
-  // Luz da explosão - Aumentamos a intensidade inicial e o raio para brilhar mais
-const mainLight = new THREE.PointLight(0xffdd00, 200, 60); 
-group.add(mainLight);
-
-this.explosions.push({
-    group,
-    mainLight,
-    fragments,
-    life: 1.0,
-    decay: 0.035 // Aumentamos um pouco para a explosão ter um "soco" mais rápido
-});
-    }
+    this.explosions.push({ group, mainLight, fragments, life: 1.0, decay: 0.05 });
+}
 
     update() {
         for (let i = this.explosions.length - 1; i >= 0; i--) {
