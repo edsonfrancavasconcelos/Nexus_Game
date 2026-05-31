@@ -17,7 +17,7 @@ export class StarfieldManager {
         const loader = new GLTFLoader();
 
         loader.load(
-            'assets/models/spaco.glb', 
+           // 'assets/models/spaco.glb', 
             (gltf) => {
                 this.spaceMesh = gltf.scene;
 
