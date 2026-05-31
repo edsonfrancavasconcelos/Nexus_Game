@@ -79,23 +79,26 @@ create(position, camera = null) {
     frag.mesh.position.add(frag.velocity);
 
     if (frag.isSmoke) {
-        // Fumaça - Aumentamos o efeito de escala para parecer que se dispersa melhor
-        frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 4));
-        frag.mesh.material.opacity = exp.life * 0.4;
-    } else {
-        // Detritos - Aumentamos a rotação para parecerem mais caóticos
-        frag.mesh.rotation.x += 0.25;
-        frag.mesh.rotation.y += 0.25;
-        frag.mesh.rotation.z += 0.25;
-        
-        frag.mesh.material.opacity = exp.life;
-        // Melhoria na cor: transição mais quente (amarelo para vermelho profundo)
-        frag.mesh.material.color.setRGB(
-            exp.life * 1.5,
-            exp.life * 0.8,
-            exp.life * 0.2
-        );
-    }
+if (frag.isSmoke) {
+    // Fumaça: Mantém a cor original (cinza escuro), apenas expande e desvanece
+    frag.mesh.scale.setScalar(frag.initialScale * (1 + (1 - exp.life) * 4));
+    frag.mesh.material.opacity = exp.life * 0.4;
+    // IMPORTANTE: Não tocamos no mesh.material.color aqui
+} else {
+    // Detritos: Estes sim devem mudar de cor conforme a explosão esfria
+    frag.mesh.rotation.x += 0.25;
+    frag.mesh.rotation.y += 0.25;
+    frag.mesh.rotation.z += 0.25;
+    
+    frag.mesh.material.opacity = exp.life;
+    
+    // Usamos um tom de cinza para o final da vida (exp.life -> 0)
+    // E tons de amarelo/laranja para o início (exp.life -> 1)
+    frag.mesh.material.color.setRGB(
+        exp.life * 2.0, // Canal R: Mais intenso no início
+        exp.life * 0.8, // Canal G
+        exp.life * 0.2  // Canal B
+    );
 }
             // Remover explosão quando acabar
             if (exp.life <= 0) {

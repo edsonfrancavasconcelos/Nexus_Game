@@ -39,33 +39,27 @@ export class SoundManager {
     }
 
     play(name) {
-        const sound = this.sounds[name];
-        if (!sound) return;
+// No seu SoundManager.js, dentro do método play:
+play(name) {
+    const sound = this.sounds[name];
+    if (!sound) return;
 
-        // Se for a nave (som ambiente em loop)
-        if (name === 'nave') {
-            if (sound.paused) {
-                sound.loop = true;
-                sound.play().catch(e => console.warn("Bloqueio de áudio:", e));
-            }
-            return;
-        }
+    // Garante que o som esteja carregado antes de tocar
+    if (sound.readyState < 2) { // 2 = HAVE_CURRENT_DATA
+        sound.load(); 
+    }
 
-        // Para sons de impacto/disparo (que podem sobrepor)
-        if (this.overlapSounds.includes(name)) {
-            // Cria uma instância nova sempre que disparar para evitar latência
-            const clone = sound.cloneNode(true);
-            clone.volume = sound.volume;
-            // Remove o clone do DOM/Memória ao terminar para não vazar
-            clone.onended = () => {
-                clone.src = ""; // Limpa a memória
-                clone.remove();
-            };
-            clone.play().catch(e => console.warn("Bloqueio de overlap:", e));
-        } else {
-            // Sons únicos que não sobrepõem
-            sound.currentTime = 0;
-            sound.play().catch(() => {});
+    if (name === 'nave') {
+        if (sound.paused) {
+            sound.loop = true;
+            sound.play().catch(e => console.warn("Erro no som da nave:", e));
         }
+    } else if (this.overlapSounds.includes(name)) {
+        const clone = sound.cloneNode(true);
+        clone.volume = sound.volume;
+        clone.play().catch(() => {});
+    } else {
+        sound.currentTime = 0;
+        sound.play().catch(() => {});
     }
 }
