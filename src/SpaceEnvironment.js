@@ -7,32 +7,37 @@ export class SpaceEnvironment {
     }
 
     initEnvironment() {
-        // 1. ILUMINAÇÃO AMBIENTE: Aumentada levemente para garantir visibilidade inicial
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.8); 
+        // 1. Aumentamos a luz ambiente para 1.0 para garantir que o preto não seja absoluto
+        const ambientLight = new THREE.AmbientLight(0x404060, 1.0); 
         this.scene.add(ambientLight);
 
-        // 2. LUZ DIRECIONAL: Foco frontal/lateral para realçar a silhueta das naves
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        // 2. Luz Direcional (O "Sol") - Agora um pouco mais forte
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
         sunLight.position.set(10, 20, 15);
         this.scene.add(sunLight);
 
-        // 3. LUZ DE PREENCHIMENTO (Rim Light): Azulado para dar profundidade
-        const rimLight = new THREE.PointLight(0x3344ff, 0.6);
-        rimLight.position.set(-20, -10, -10);
-        this.scene.add(rimLight);
+        // 3. Rim Lighting (Luz de Contorno) - Duplicamos para garantir destaque em ambos os lados
+        // Isso cria aquele brilho nas bordas da nave preta
+        const rimLightLeft = new THREE.PointLight(0x3344ff, 2.0, 100);
+        rimLightLeft.position.set(-30, 0, 0);
+        this.scene.add(rimLightLeft);
 
-        // 4. FUNDO: Mantido o tom escuro para o contraste das estrelas
-        this.scene.background = new THREE.Color(0x010103);
+        const rimLightRight = new THREE.PointLight(0xff4433, 2.0, 100);
+        rimLightRight.position.set(30, 0, 0);
+        this.scene.add(rimLightRight);
 
-        // 5. NEVOEIRO (Fog): Densidade ajustada para evitar o desaparecimento prematuro das naves
-        // Se as naves sumirem muito cedo, diminua o 0.0015 para 0.0005
-        this.scene.fog = new THREE.FogExp2(0x010103, 0.0008);
+        // 4. Fundo levemente azulado em vez de preto puro
+        // Isso ajuda o cérebro humano a distinguir profundidade
+        this.scene.background = new THREE.Color(0x020208);
+
+        // 5. Nevoeiro com cor ajustada para combinar com o fundo
+        this.scene.fog = new THREE.FogExp2(0x020208, 0.0008);
 
         console.log('--- AMBIENTE CONFIGURADO ---');
     }
 
     update(deltaTime) {
-        // Opcional: Adicionar movimento suave se necessário
-        // this.scene.children.forEach(child => { if(child.isPointLight) ... });
+        // Opcional: fazer as luzes de contorno "pulsarem" levemente
+        // Isso dá uma sensação de movimento espacial
     }
 }
