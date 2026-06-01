@@ -24,8 +24,8 @@ export class StarfieldManager {
 
                 // Envolve a câmera do jogo
                 this.spaceMesh.scale.set(35, 35, 35); 
-this.spaceMesh.position.set(0, 0, 0);
-
+this.spaceMesh.position.set(2, 2, 2 );
+ 
 this.spaceMesh.traverse((child) => {
     if (child.isMesh) {
         if (child.material) {
