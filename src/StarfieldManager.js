@@ -17,10 +17,15 @@ export class StarfieldManager {
         const loader = new GLTFLoader();
 
         // O caminho deve começar com '/' para ser buscado na raiz do site no Vercel
-        loader.load(
-            '/assets/models/spaco.glb', 
-            (gltf) => {
-                this.spaceMesh = gltf.scene;
+      // Após carregar o modelo:
+loader.load('/assets/models/spaco.glb', (gltf) => {
+    this.spaceMesh = gltf.scene;
+    this.scene.add(this.spaceMesh);
+
+    // Criar uma caixa de colisão invisível baseada no tamanho do modelo
+    const box = new THREE.Box3().setFromObject(this.spaceMesh);
+    this.spaceHitbox = box; 
+});
 
                 // Envolve a câmera do jogo
                 this.spaceMesh.scale.set(35, 35, 35); 
@@ -58,10 +63,14 @@ this.spaceMesh.traverse((child) => {
         );
     }
 
-    update() {
-        if (this.spaceMesh) {
-            this.spaceMesh.rotation.y += this.rotationSpeed;
-            this.spaceMesh.rotation.x += 0.0001; 
-        }
-    }
+ // No seu loop de update:
+if (this.spaceHitbox && this.spaceHitbox.containsPoint(player.mesh.position)) {
+    // A nave atingiu o limite do cenário!
+    console.log("Colisão detectada com o ambiente!");
+    
+    // Adicione a lógica de dano ou parada aqui:
+    player.takeDamage(10); 
+    // Ou faça ela recuar:
+    player.mesh.position.z += 1; 
 }
+    
